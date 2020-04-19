@@ -9,6 +9,7 @@ __pycache__/*
 data/*
 
 model/*.pt
+model/weights*
 model/__pycache__/*
 
 transforms/__pycache__/*
