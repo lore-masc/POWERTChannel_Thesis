@@ -1,0 +1,14 @@
+# PyCharm
+.idea/
+
+# Python
+venv/*
+__pycache__/*
+
+# Project
+data/*
+
+model/*.pt
+model/__pycache__/*
+
+transforms/__pycache__/*
