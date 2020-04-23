@@ -6,7 +6,7 @@ import argparse
 import os
 from pathlib import Path
 
-from torchvision.transforms import *
+from torchvision.transforms import Compose
 from tqdm import *
 
 from torch.utils.data import DataLoader
@@ -61,16 +61,6 @@ Input arguments
 '''
 
 
-def initialize_net(depth=250, growthRate=12, load=''):
-    if load != '' and Path(load).exists():
-        net = torch.load(load)
-    else:
-        # load the net
-        net = DenseNet(depth=depth, growthRate=growthRate, compressionRate=2, num_classes=len(CLASSES), in_channels=1)
-        # net = WideResNet(depth=28, widen_factor=10, dropRate=0, num_classes=len(CLASSES), in_channels=1)
-    return net
-
-
 '''
 Input arguments
     model: Model used for the test
@@ -78,6 +68,15 @@ Input arguments
     wd: Weight decay co-efficient for regularization of weights
     momentum: Momentum for SGD optimizers
 '''
+
+
+def initialize_net(depth=250, growthRate=12, model_path=''):
+    net = DenseNet(depth=depth, growthRate=growthRate, compressionRate=2, num_classes=len(CLASSES), in_channels=1)
+    if model_path != '' and Path(model_path).exists():
+        state_dict = torch.load(model_path)
+        net.load_state_dict(state_dict, strict=False)
+
+    return net
 
 
 def get_optimizer(model, lr, wd, momentum):
@@ -211,11 +210,15 @@ def predict(input_path, net, use_gpu=True):
     net.eval()  # Strictly needed if network contains layers which has different behaviours between train and test
 
     audio = audio_loader.dataset['input']
-    audio = torch.unsqueeze(audio, 1).view(1, 1, 40, 32)
+    audio = torch.unsqueeze(audio, 1)
+    audio = audio.view(1, 1, 40, 32)
 
     # Load data into GPU
     audio = audio.to(device)
-    class_index = net.forward(audio).data.max(1, keepdim=True)[1]
+
+    # Forward into network
+    output = net.forward(audio)
+    class_index = output.data.max(1, keepdim=True)[1]
 
     torch.cuda.empty_cache()
     return CLASSES[class_index]
@@ -252,13 +255,13 @@ def main(batch_size=128,
     if version == 'low':
         depth = 22
         growthRate = 12
-        model_path = 'model/weights_dn_22_12'
+        model_path = 'model/weights_dn_22_12.pth'
     elif version == 'high':
         depth = 250
         growthRate = 24
-        model_path = 'model/weights_dn_250_24'
+        model_path = 'model/weights_dn_250_24.pth'
 
-    net = initialize_net(depth=depth, growthRate=growthRate, load=model_path).to(device)
+    net = initialize_net(depth=depth, growthRate=growthRate, model_path=model_path).to(device)
 
     if not perform_training:
         # print(root)
@@ -278,14 +281,16 @@ def main(batch_size=128,
         cost_function = get_cost_function()
 
         # Op Counter
-        dsize = (32, 1, 40, 32)
-        r_input = torch.randn(dsize).to(device)
-        macs, params = profile(net, inputs=(r_input,), verbose=False)
-        print("\n%s\t| %s" % ("Params(M)", "FLOPs(G)"))
-        print("%.2f\t\t| %.2f" % (params / (1000 ** 2), macs / (1000 ** 3)))
+        # dsize = (32, 1, 40, 32)
+        # r_input = torch.randn(dsize).to(device)
+        # macs, params = profile(net, inputs=(r_input,), verbose=False)
+        # print("\n%s\t| %s" % ("Params(M)", "FLOPs(G)"))
+        # print("%.2f\t\t| %.2f" % (params / (1000 ** 2), macs / (1000 ** 3)))
 
+        # train_loss, train_accuracy = test(net, train_loader, cost_function, device)
         test_loss, test_accuracy = test(net, test_loader, cost_function, device)
         print('\nTest before training')
+        # print('\t{"Training loss": %.5f, "Training accuracy": %.2f},' % (train_loss, train_accuracy))
         print('\t{"Test loss": %.5f, "Test accuracy": %.2f},' % (test_loss, test_accuracy))
         # print('-----------------------------------------------------')
 
@@ -311,8 +316,9 @@ def main(batch_size=128,
 
             # saving model
             if save:
-                # print("Saving weights")
-                torch.save(net, model_path)
+                print("Saving weights")
+                # torch.save(net, model_path)
+                torch.save(net.state_dict(), model_path)
 
         train_loss, train_accuracy = test(net, train_loader, cost_function, device)
         test_loss, test_accuracy = test(net, test_loader, cost_function, device)
@@ -340,7 +346,7 @@ if __name__ == '__main__':
                         help='Set option in order to perform training.')
     parser.add_argument('-s', '--save', action='store_true', dest='save',
                         help='Replace old weights after the training.')
-    parser.add_argument('-g', '--gpu', action='store_true', dest='gpu', default=True,
+    parser.add_argument('-g', '--gpu', action='store_true', dest='gpu', default=False,
                         help='True if you want perform operations with a gpu device. CPU will be used otherwise.')
 
     args = parser.parse_args()
