@@ -57,16 +57,7 @@ def get_data(batch_size, root, use_gpu=True):
 Input arguments
     depth: Depth of a convolution block
     growthRate: GrowthRate in DenseNet
-    load: String path of the loaded model
-'''
-
-
-'''
-Input arguments
-    model: Model used for the test
-    lr: Learning rate for training speed
-    wd: Weight decay co-efficient for regularization of weights
-    momentum: Momentum for SGD optimizers
+    model_path: String path of the loaded model
 '''
 
 
@@ -79,12 +70,21 @@ def initialize_net(depth=250, growthRate=12, model_path=''):
     return net
 
 
+'''
+Input arguments
+    model: Model used for the test
+    lr: Learning rate for training speed
+    wd: Weight decay co-efficient for regularization of weights
+    momentum: Momentum for SGD optimizers
+'''
+
+
 def get_optimizer(model, lr, wd, momentum):
     optimizer = torch.optim.SGD(model.parameters(), lr=lr, momentum=momentum, weight_decay=wd)
 
     return optimizer
 
-  
+
 def get_cost_function():
     cost_function = torch.nn.CrossEntropyLoss()
     return cost_function
@@ -250,7 +250,11 @@ def main(batch_size=128,
          perform_training=True,
          version='low'):
 
-    device = 'cuda:0' if use_gpu else 'cpu'
+    if use_gpu:
+        device = 'cuda:0'
+        torch.cuda.empty_cache()
+    else:
+        device = 'cpu'
 
     if version == 'low':
         depth = 22
