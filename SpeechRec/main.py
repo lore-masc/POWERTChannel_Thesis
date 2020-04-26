@@ -268,7 +268,6 @@ def main(batch_size=128,
     net = initialize_net(depth=depth, growthRate=growthRate, model_path=model_path).to(device)
 
     if not perform_training:
-        # print(root)
         input_audios = [predict(input_path=os.path.join(root, r), net=net, use_gpu=use_gpu) for r in os.listdir(root)]
         print(input_audios)
         return
@@ -285,11 +284,11 @@ def main(batch_size=128,
         cost_function = get_cost_function()
 
         # Op Counter
-        # dsize = (32, 1, 40, 32)
-        # r_input = torch.randn(dsize).to(device)
-        # macs, params = profile(net, inputs=(r_input,), verbose=False)
-        # print("\n%s\t| %s" % ("Params(M)", "FLOPs(G)"))
-        # print("%.2f\t\t| %.2f" % (params / (1000 ** 2), macs / (1000 ** 3)))
+        dsize = (32, 1, 40, 32)
+        r_input = torch.randn(dsize).to(device)
+        macs, params = profile(net, inputs=(r_input,), verbose=False)
+        print("\n%s\t| %s" % ("Params(M)", "FLOPs(G)"))
+        print("%.2f\t\t| %.2f" % (params / (1000 ** 2), macs / (1000 ** 3)))
 
         # train_loss, train_accuracy = test(net, train_loader, cost_function, device)
         test_loss, test_accuracy = test(net, test_loader, cost_function, device)
@@ -339,7 +338,7 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--dataset', action='store', dest='dataset', default='data/',
                         choices=['data/', 'data/input/'],
                         help='Write the dataset relative path only if you have to perform training; '
-                             'Specify the inputs folder otherwhise.',)
+                             'Specify the inputs folder otherwise.')
     parser.add_argument('-v', '--version', action='store', dest='version', required=True, choices=['low', 'high'],
                         help='High needs intensive computational resources; Low is a more light version.')
     parser.add_argument('-e', '--epochs', action='store', dest='epochs', type=int,
