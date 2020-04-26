@@ -89,6 +89,12 @@ print("\n%s\t| %s" % ("Params(M)", "FLOPs(G)"))
 print("%.2f\t\t| %.2f" % (params / (1000 ** 2), macs / (1000 ** 3)))
 ```
 
+Results:
+|Name 		|Params(M)	| FLOPs(G)|
+|--|--|--|
+|dn_22_12	| 0.07		| 1.27|
+|dn_250_24	| 15.33		| 220.13|
+
 ### How to store and to load trained weights
 If requested by input, the ``main.py`` script can save the trained weights in a indicate *.pth* file.
 ```python
