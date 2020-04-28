@@ -116,20 +116,6 @@ public class MainActivity extends AppCompatActivity {
             textView.setVisibility(View.INVISIBLE);
     }
 
-    public void onMutualCheck(View view) {
-        Switch mutual_switches = (Switch) view;
-        int mutual_switch_id = mutual_switches.getId();
-
-        switch (mutual_switch_id) {
-            case R.id.switch1:
-                ((Switch) findViewById(R.id.switch3)).setChecked(false);
-                break;
-            case R.id.switch3:
-                ((Switch) findViewById(R.id.switch1)).setChecked(false);
-                break;
-        }
-    }
-
     public void onRecordNew(View view) {
         ImageButton btn = (ImageButton) view;
         String btn_state = btn.getTag().toString();
@@ -191,7 +177,7 @@ public class MainActivity extends AppCompatActivity {
         Random random = new Random();
         long selected_id;
         Module selected_module;
-        Switch force_model = findViewById(R.id.switch1);
+        Switch switch3 = findViewById(R.id.switch3);
 
         try {
             double[] buffer = this.wavTransform.wavToDoubleArray(0,16000);
@@ -216,19 +202,25 @@ public class MainActivity extends AppCompatActivity {
             Tensor inputTensor = Tensor.fromBlob(mfccInput, shape);
             Tensor outputTensor = null;
 
-            if (force_model.isChecked()) {
-                Spinner spinner = findViewById(R.id.spinner);
-                selected_id = spinner.getSelectedItemId();
-                selected_module = (selected_id == 1) ? this.module_high : this.module_low;
+            Spinner spinner = findViewById(R.id.spinner);
+            selected_id = spinner.getSelectedItemId();
+
+            int times;
+            if (switch3.isChecked())
+                times = Integer.parseInt(String.valueOf(((EditText) findViewById(R.id.editText2)).getText()));
+            else
+                times = 1;
+
+            for (int i = 0; i < times; i++) {
+                long module_idx;
+                if (selected_id == 2)
+                    module_idx = random.nextInt(2);
+                else
+                    module_idx = selected_id;
+
+                selected_module = (module_idx == 1) ? this.module_high : this.module_low;
+                Log.d(LOG_TAG, "time #" + times + " => " + module_idx);
                 outputTensor = selected_module.forward(IValue.from(inputTensor)).toTensor();
-            } else {
-                int times = Integer.parseInt(String.valueOf(((EditText) findViewById(R.id.editText2)).getText()));
-                do {
-                    selected_id = random.nextInt(2);
-                    selected_module = (selected_id == 1) ? this.module_high : this.module_low;
-                    Log.d(LOG_TAG, "time #" + times + " => " + selected_id);
-                    outputTensor = selected_module.forward(IValue.from(inputTensor)).toTensor();
-                } while ((--times) > 0);
             }
 
             float[] scores = outputTensor.getDataAsFloatArray();
