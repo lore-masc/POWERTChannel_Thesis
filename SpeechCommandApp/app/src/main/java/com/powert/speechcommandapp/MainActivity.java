@@ -1,18 +1,19 @@
 package com.powert.speechcommandapp;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
-import android.graphics.Typeface;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
-import android.speech.SpeechRecognizer;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.View;
 import android.widget.EditText;
-import android.widget.LinearLayout;
+import android.widget.ImageButton;
+import android.widget.ProgressBar;
+import android.widget.Spinner;
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -33,21 +34,24 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Random;
 
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
     private static final int REQUEST_PERMISSION_CODE = 1;
 
-    private static final String MODEL_FILENAME = "mobile_densenet_22_12.pt";
+    private static final String LOW_MODEL = "mobile_densenet_22_12.pt";
+    private static final String HIGH_MODEL = "mobile_densenet_250_24.pt";
     private static final String LOG_TAG = MainActivity.class.getSimpleName();
     private static final String RECORD_FILE_PATH = Environment.getExternalStorageDirectory().getAbsolutePath() + "/recorded_audio.wav";
 
     WavTransform wavTransform;
 
-    Module module = null;
+    String className = "";
+    Module module_low = null;
+    Module module_high = null;
     private String CLASSES[] = {"unknown", "silence", "yes", "no",
             "up", "down", "left", "right", "on",
             "off", "stop", "go"};
@@ -66,10 +70,22 @@ public class MainActivity extends AppCompatActivity {
         }
 
         try {
-            module = Module.load(assetFilePath(this, MODEL_FILENAME));
-            Log.d(LOG_TAG, "success open model");
+            module_low = Module.load(assetFilePath(this, LOW_MODEL));
+            Log.d(LOG_TAG, "Low model opens with success");
         } catch (IOException e) {
-            Log.e(LOG_TAG, "Error reading assets", e);
+            String message = "Error reading assets during low model opening";
+            Log.e(LOG_TAG, message, e);
+            Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show();
+            finish();
+        }
+
+        try {
+            module_high = Module.load(assetFilePath(this, HIGH_MODEL));
+            Log.d(LOG_TAG, "High model opens with success");
+        } catch (IOException e) {
+            String message = "Error reading assets during high model opening";
+            Log.e(LOG_TAG, message, e);
+            Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show();
             finish();
         }
 
@@ -90,38 +106,95 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void onRecordNew(View view) {
-        TextView btn = (TextView) view;
-        String   btn_text = btn.getText().toString();
+    public void onSaveCheck(View view) {
+        boolean save = ((Switch) findViewById(R.id.switch2)).isChecked();
+        TextView textView = findViewById(R.id.textView);
 
-        switch(btn_text){
-            case "Record new":
-                Log.d(LOG_TAG, "Start Recording");
-                this.wavTransform.startRecording();
-                btn_text = "Stop";
-                btn.setText(btn_text);
+        if (save)
+            textView.setVisibility(View.VISIBLE);
+        else
+            textView.setVisibility(View.INVISIBLE);
+    }
+
+    public void onMutualCheck(View view) {
+        Switch mutual_switches = (Switch) view;
+        int mutual_switch_id = mutual_switches.getId();
+
+        switch (mutual_switch_id) {
+            case R.id.switch1:
+                ((Switch) findViewById(R.id.switch3)).setChecked(false);
                 break;
-            case "Stop":
-                Log.d(LOG_TAG, "Stop Recording");
-                this.wavTransform.stopRecording();
-                btn_text = "Record new";
-                btn.setText(btn_text);
+            case R.id.switch3:
+                ((Switch) findViewById(R.id.switch1)).setChecked(false);
                 break;
         }
     }
 
-    public void onStartRecognition(View view) throws IOException {
-        startRecognition();
+    public void onRecordNew(View view) {
+        ImageButton btn = (ImageButton) view;
+        String btn_state = btn.getTag().toString();
+
+        switch(btn_state){
+            case "0":
+                Log.d(LOG_TAG, "Start Recording");
+                this.wavTransform.startRecording();
+                btn.setTag(1);
+                btn.setBackgroundTintList(ContextCompat.getColorStateList(getApplicationContext(), R.color.black));
+                btn.setImageTintList(ContextCompat.getColorStateList(getApplicationContext(), R.color.red));
+                break;
+            case "1":
+                Log.d(LOG_TAG, "Stop Recording");
+                this.wavTransform.stopRecording();
+                btn.setTag(0);
+                btn.setBackgroundTintList(ContextCompat.getColorStateList(getApplicationContext(), R.color.gray));
+                btn.setImageTintList(ContextCompat.getColorStateList(getApplicationContext(), R.color.white));
+                findViewById(R.id.start_btn).performClick();
+                break;
+        }
     }
 
-    public void startRecognition() throws IOException {
+    @SuppressLint("StaticFieldLeak")
+    public void onStartRecognition(View view) {
+        boolean save = ((Switch) findViewById(R.id.switch2)).isChecked();
+        final ProgressBar progressBar = findViewById(R.id.progressBar);
+
+        AsyncTask<Void, Void, Void> task = new AsyncTask<Void, Void, Void> () {
+            @Override
+            protected Void doInBackground(Void... voids) {
+                startRecognition();
+                return null;
+            }
+
+            @Override
+            protected void onPreExecute() {
+                super.onPreExecute();
+                progressBar.setVisibility(View.VISIBLE);
+            }
+
+            @Override
+            protected void onPostExecute(Void v) {
+                super.onPostExecute(v);
+                EditText editText = findViewById(R.id.editText);
+                editText.append(className + " ");
+                progressBar.setVisibility(View.GONE);
+            }
+        };
+        task.execute();
+
+        if (!save)
+            new File(RECORD_FILE_PATH).delete();
+    }
+
+    public void startRecognition() {
         Log.d(LOG_TAG, "Start recognition");
 
-        String className = "";
+        Random random = new Random();
+        long selected_id;
+        Module selected_module;
+        Switch force_model = findViewById(R.id.switch1);
 
         try {
             double[] buffer = this.wavTransform.wavToDoubleArray(0,16000);
-
             //MFCC java library.
             MFCC mfccConvert = new MFCC();
             double[][] melSpectrogram = mfccConvert.melSpectrogram(buffer);
@@ -141,7 +214,23 @@ public class MainActivity extends AppCompatActivity {
             Log.d(LOG_TAG, "MFCC Input======> " + mfccInput.length);
             long[] shape = {1, 1, 40, 32};
             Tensor inputTensor = Tensor.fromBlob(mfccInput, shape);
-            Tensor outputTensor = module.forward(IValue.from(inputTensor)).toTensor();
+            Tensor outputTensor = null;
+
+            if (force_model.isChecked()) {
+                Spinner spinner = findViewById(R.id.spinner);
+                selected_id = spinner.getSelectedItemId();
+                selected_module = (selected_id == 1) ? this.module_high : this.module_low;
+                outputTensor = selected_module.forward(IValue.from(inputTensor)).toTensor();
+            } else {
+                int times = Integer.parseInt(String.valueOf(((EditText) findViewById(R.id.editText2)).getText()));
+                do {
+                    selected_id = random.nextInt(2);
+                    selected_module = (selected_id == 1) ? this.module_high : this.module_low;
+                    Log.d(LOG_TAG, "time #" + times + " => " + selected_id);
+                    outputTensor = selected_module.forward(IValue.from(inputTensor)).toTensor();
+                } while ((--times) > 0);
+            }
+
             float[] scores = outputTensor.getDataAsFloatArray();
 
             Log.d(LOG_TAG, "Output tensor======> " + Arrays.toString(scores));
@@ -154,14 +243,12 @@ public class MainActivity extends AppCompatActivity {
                     maxScoreIdx = i;
                 }
             }
-            className = CLASSES[maxScoreIdx];
-        } catch (WavFileException e) {
-            e.printStackTrace();
-        }
+            this.className = CLASSES[maxScoreIdx];
 
-        Log.d(LOG_TAG, className);
-        EditText editText = findViewById(R.id.editText);
-        editText.append(className + " ");
+            Log.d(LOG_TAG, className);
+        } catch (IOException | WavFileException e) {
+            Toast.makeText(getApplicationContext(), e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void requestPermission() {

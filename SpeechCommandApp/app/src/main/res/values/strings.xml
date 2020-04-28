@@ -1,3 +1,13 @@
 <resources>
     <string name="app_name">Speech Commands</string>
+    <string name="recognition">Recognize</string>
+    <string name="force">"Use only a version: "</string>
+    <string-array name="models">
+        <item>Low</item>
+        <item>High</item>
+    </string-array>
+    <string name="message_store">The last registration is saved into storage root as recorded_audio.wav</string>
+    <string name="duration">times</string>
+    <string name="times">#</string>
+    <string name="one">1</string>
 </resources>

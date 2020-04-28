@@ -15,8 +15,8 @@ import java.io.IOException;
 public class WavTransform {
     private static final int RECORDER_BPP = 16;
     private static final String AUDIO_RECORDER_TEMP_FILE = "record_temp.raw";
-    private static final int RECORDER_SAMPLERATE = 44100;
-    private static final int RECORDER_CHANNELS = AudioFormat.CHANNEL_IN_STEREO;
+    private static final int RECORDER_SAMPLERATE = 16000;
+    private static final int RECORDER_CHANNELS = AudioFormat.CHANNEL_IN_MONO;
     private static final int RECORDER_AUDIO_ENCODING = AudioFormat.ENCODING_PCM_16BIT;
 
     private AudioRecord recorder = null;
@@ -38,8 +38,14 @@ public class WavTransform {
         this.audioData = new short [bufferSize]; //short array that pcm data is put into.
     }
 
-    private double[] fixedLenght (double[] samples, int length) {
+    private double[] fixedLength (double[] samples, int length) {
         double[] fixed_buffer = new double[length];
+//        int start = 0;
+//        for (int i = 0; i < samples.length; i++)
+//            if (samples[i] != 0.0) {
+//                start = i;
+//                break;
+//            }
         System.arraycopy(samples, 0, fixed_buffer, 0, length);
         return fixed_buffer;
     }
@@ -70,7 +76,7 @@ public class WavTransform {
         // Close the wavFile
         this.wavFile.close();
 
-        buffer = fixedLenght(buffer,16000);
+        buffer = fixedLength(buffer,16000);
 
         return buffer;
     }
