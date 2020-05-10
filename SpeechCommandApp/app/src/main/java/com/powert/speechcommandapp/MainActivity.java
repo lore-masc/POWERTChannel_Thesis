@@ -141,7 +141,6 @@ public class MainActivity extends AppCompatActivity {
 
     @SuppressLint("StaticFieldLeak")
     public void onStartRecognition(View view) {
-        boolean save = ((Switch) findViewById(R.id.switch2)).isChecked();
         final ProgressBar progressBar = findViewById(R.id.progressBar);
 
         AsyncTask<Void, Void, Void> task = new AsyncTask<Void, Void, Void> () {
@@ -160,15 +159,17 @@ public class MainActivity extends AppCompatActivity {
             @Override
             protected void onPostExecute(Void v) {
                 super.onPostExecute(v);
+                boolean save = ((Switch) findViewById(R.id.switch2)).isChecked();
+
                 EditText editText = findViewById(R.id.editText);
                 editText.append(className + " ");
                 progressBar.setVisibility(View.GONE);
+
+                if (!save)
+                    new File(RECORD_FILE_PATH).delete();
             }
         };
         task.execute();
-
-        if (!save)
-            new File(RECORD_FILE_PATH).delete();
     }
 
     public void startRecognition() {
@@ -239,7 +240,7 @@ public class MainActivity extends AppCompatActivity {
 
             Log.d(LOG_TAG, className);
         } catch (IOException | WavFileException e) {
-            Toast.makeText(getApplicationContext(), e.getMessage(), Toast.LENGTH_SHORT).show();
+            e.printStackTrace();
         }
     }
 
