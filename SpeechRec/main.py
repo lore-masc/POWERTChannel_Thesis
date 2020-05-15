@@ -6,17 +6,15 @@ import argparse
 import os
 from pathlib import Path
 
+from thop import profile
+from torch.utils.data import DataLoader
+from torch.utils.data.sampler import WeightedRandomSampler
 from torchvision.transforms import Compose
 from tqdm import *
 
-from torch.utils.data import DataLoader
-from torch.utils.data.sampler import WeightedRandomSampler
-
-from model import DenseNet
+from model.resnet import resnet18, resnext101_32x8d
 from speech_commands_dataset import *
 from transforms import *
-from thop import profile
-
 
 '''
 Input arguments
@@ -24,7 +22,6 @@ Input arguments
     root: The root folder of audio
     use_gpu: GPU where you want to train your network
 '''
-
 
 def get_data(batch_size, root, use_gpu=True):
 
@@ -55,15 +52,18 @@ def get_data(batch_size, root, use_gpu=True):
 
 '''
 Input arguments
-    depth: Depth of a convolution block
-    growthRate: GrowthRate in DenseNet
+    version: String indicates the version of the network ['low', 'high']
     model_path: String path of the loaded model
 '''
 
 
-def initialize_net(depth=250, growthRate=12, model_path=''):
-    net = DenseNet(depth=depth, growthRate=growthRate, compressionRate=2, num_classes=len(CLASSES), in_channels=1)
-    if model_path != '' and Path(model_path).exists():
+def initialize_net(version='low', model_path=''):
+    if version == 'low':
+        net = resnet18(num_classes=len(CLASSES), quantize=False)
+    else:
+        net = resnext101_32x8d(num_classes=len(CLASSES), quantize=False)
+
+    if Path(model_path).exists():
         state_dict = torch.load(model_path)
         net.load_state_dict(state_dict, strict=False)
 
@@ -107,7 +107,7 @@ def train(net, data_loader, optimizer, cost_function, device='cuda:0'):
 
     net.train()  # Strictly needed if network contains layers which has different behaviours between train and test
 
-    pbar = tqdm(data_loader, unit="audios", unit_scale=data_loader.batch_size)
+    pbar = tqdm(data_loader, unit="audios", unit_scale=data_loader.batch_size, position=0, leave=True)
     for batch in pbar:
         inputs = batch['input']
         inputs = torch.unsqueeze(inputs, 1)
@@ -154,14 +154,16 @@ Input arguments
 '''
 
 
-def test(net, data_loader, cost_function, device='cuda:0'):
+def test(net, data_loader, cost_function, device='cuda:0', num_batches=0):
     samples = 0.
     cumulative_loss = 0.
     cumulative_accuracy = 0.
 
     net.eval()  # Strictly needed if network contains layers which has different behaviours between train and test
+    done_batches = 0
+
     with torch.no_grad():
-        pbar = tqdm(data_loader, unit="audios", unit_scale=data_loader.batch_size)
+        pbar = tqdm(data_loader, unit="audios", unit_scale=data_loader.batch_size, position=0, leave=True)
         for batch in pbar:
             inputs = batch['input']
             inputs = torch.unsqueeze(inputs, 1)
@@ -176,6 +178,7 @@ def test(net, data_loader, cost_function, device='cuda:0'):
 
             # Apply the loss
             loss = cost_function(outputs, targets)
+            done_batches += 1
 
             # Better print something
             samples += inputs.shape[0]
@@ -185,6 +188,9 @@ def test(net, data_loader, cost_function, device='cuda:0'):
 
             # Free cuda memory
             torch.cuda.empty_cache()
+
+            if 0 < num_batches <= done_batches:
+                return cumulative_loss / samples, cumulative_accuracy / samples * 100
 
     return cumulative_loss/samples, cumulative_accuracy/samples*100
 
@@ -257,15 +263,19 @@ def main(batch_size=128,
         device = 'cpu'
 
     if version == 'low':
-        depth = 22
-        growthRate = 12
-        model_path = 'model/weights_dn_22_12.pth'
+        model_path = 'model/weights_rn_18.pth'
     elif version == 'high':
-        depth = 250
-        growthRate = 24
-        model_path = 'model/weights_dn_250_24.pth'
+        model_path = 'model/weights_rn_101.pth'
 
-    net = initialize_net(depth=depth, growthRate=growthRate, model_path=model_path).to(device)
+    net = initialize_net(version=version, model_path=model_path).to(device)
+
+    # Op Counter
+    dsize = (32, 1, 40, 32)
+    r_input = torch.randn(dsize).to(device)
+    macs, params = profile(net, inputs=(r_input,), verbose=False)
+    print("\n%s\t| %s" % ("Params(M)", "FLOPs(G)"))
+    print("%.2f\t\t| %.2f" % (params / (1000 ** 2), macs / (1000 ** 3)))
+    print()
 
     if not perform_training:
         input_audios = [predict(input_path=os.path.join(root, r), net=net, use_gpu=use_gpu) for r in os.listdir(root)]
@@ -282,13 +292,6 @@ def main(batch_size=128,
         optimizer = get_optimizer(net, learning_rate, weight_decay, momentum)
 
         cost_function = get_cost_function()
-
-        # Op Counter
-        dsize = (32, 1, 40, 32)
-        r_input = torch.randn(dsize).to(device)
-        macs, params = profile(net, inputs=(r_input,), verbose=False)
-        print("\n%s\t| %s" % ("Params(M)", "FLOPs(G)"))
-        print("%.2f\t\t| %.2f" % (params / (1000 ** 2), macs / (1000 ** 3)))
 
         # train_loss, train_accuracy = test(net, train_loader, cost_function, device)
         test_loss, test_accuracy = test(net, test_loader, cost_function, device)
@@ -320,7 +323,6 @@ def main(batch_size=128,
             # saving model
             if save:
                 print("Saving weights")
-                # torch.save(net, model_path)
                 torch.save(net.state_dict(), model_path)
 
         train_loss, train_accuracy = test(net, train_loader, cost_function, device)
