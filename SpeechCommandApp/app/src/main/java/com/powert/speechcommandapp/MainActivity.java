@@ -42,8 +42,8 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
     private static final int REQUEST_PERMISSION_CODE = 1;
 
-    private static final String LOW_MODEL = "mobile_densenet_22_12.pt";
-    private static final String HIGH_MODEL = "mobile_densenet_250_24.pt";
+    private static final String LOW_MODEL = "mobile_resnet_18_quantized.pt";
+    private static final String HIGH_MODEL = "mobile_resnet_18.pt";
     private static final String LOG_TAG = MainActivity.class.getSimpleName();
     private static final String RECORD_FILE_PATH = Environment.getExternalStorageDirectory().getAbsolutePath() + "/recorded_audio.wav";
 
@@ -72,7 +72,7 @@ public class MainActivity extends AppCompatActivity {
         try {
             module_low = Module.load(assetFilePath(this, LOW_MODEL));
             Log.d(LOG_TAG, "Low model opens with success");
-        } catch (IOException e) {
+        } catch (Exception e) {
             String message = "Error reading assets during low model opening";
             Log.e(LOG_TAG, message, e);
             Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show();
@@ -82,7 +82,7 @@ public class MainActivity extends AppCompatActivity {
         try {
             module_high = Module.load(assetFilePath(this, HIGH_MODEL));
             Log.d(LOG_TAG, "High model opens with success");
-        } catch (IOException e) {
+        } catch (Exception e) {
             String message = "Error reading assets during high model opening";
             Log.e(LOG_TAG, message, e);
             Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show();
@@ -104,6 +104,14 @@ public class MainActivity extends AppCompatActivity {
                 != PackageManager.PERMISSION_GRANTED) {
             requestPermission();
         }
+    }
+
+    public void onAlternateFor(View view) {
+        boolean checked = ((Switch) findViewById(R.id.switch4)).isChecked();
+        if (checked)
+            findViewById(R.id.spinner).setEnabled(false);
+        else
+            findViewById(R.id.spinner).setEnabled(true);
     }
 
     public void onSaveCheck(View view) {
@@ -177,8 +185,9 @@ public class MainActivity extends AppCompatActivity {
 
         Random random = new Random();
         long selected_id;
-        Module selected_module;
+        Module selected_module = null;
         Switch switch3 = findViewById(R.id.switch3);
+        Switch switch4 = findViewById(R.id.switch4);
 
         try {
             double[] buffer = this.wavTransform.wavToDoubleArray(0,16000);
@@ -207,22 +216,37 @@ public class MainActivity extends AppCompatActivity {
             selected_id = spinner.getSelectedItemId();
 
             int times;
+            long timer, start_time, end_time;
             if (switch3.isChecked())
                 times = Integer.parseInt(String.valueOf(((EditText) findViewById(R.id.editText2)).getText()));
             else
                 times = 1;
 
-            for (int i = 0; i < times; i++) {
-                long module_idx;
-                if (selected_id == 2)
-                    module_idx = random.nextInt(2);
-                else
-                    module_idx = selected_id;
+            if (switch4.isChecked())
+                for (int i = 0; i < times; i++) {
+                    timer = Integer.parseInt(String.valueOf(((EditText) findViewById(R.id.editText3)).getText())) * 1000;
+                    selected_module = (i % 2 == 0) ? this.module_low: this.module_high;
+                    while (timer >= 0) {
+                        start_time = System.currentTimeMillis();
+                        outputTensor = selected_module.forward(IValue.from(inputTensor)).toTensor();
+                        end_time = System.currentTimeMillis();
 
-                selected_module = (module_idx == 1) ? this.module_high : this.module_low;
-                Log.d(LOG_TAG, "time #" + times + " => " + module_idx);
-                outputTensor = selected_module.forward(IValue.from(inputTensor)).toTensor();
-            }
+                        timer -= (int) (end_time - start_time);
+                        //Log.d(LOG_TAG, "Iteration: " + i + " - Residual time: " + timer + " - Version: " + ((i % 2 == 0) ? "Low" : "High"));
+                    }
+                }
+            else
+                for (int i = 0; i < times; i++) {
+                    long module_idx;
+                    if (selected_id == 2)
+                        module_idx = random.nextInt(2);
+                    else
+                        module_idx = selected_id;
+
+                    selected_module = (module_idx == 1) ? this.module_high : this.module_low;
+                    // Log.d(LOG_TAG, "time #" + times + " => " + module_idx);
+                    outputTensor = selected_module.forward(IValue.from(inputTensor)).toTensor();
+                }
 
             float[] scores = outputTensor.getDataAsFloatArray();
 

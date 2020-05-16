@@ -10,6 +10,9 @@
     <string name="message_store">The last registration is saved into storage root as recorded_audio.wav</string>
     <string name="duration">times</string>
     <string name="times">#</string>
+    <string name="seconds">s</string>
     <string name="one">1</string>
+    <string name="ten">10</string>
     <string name="repeat">Repeat for: </string>
+    <string name="alternate">Alternate for: </string>
 </resources>

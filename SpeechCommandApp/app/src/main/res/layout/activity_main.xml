@@ -23,7 +23,7 @@
     <LinearLayout
         android:id="@+id/linearLayout2"
         android:layout_width="300dp"
-        android:layout_height="500dp"
+        android:layout_height="600dp"
         android:gravity="center"
         android:orientation="vertical"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -134,12 +134,44 @@
                 android:textColor="@color/black" />
         </LinearLayout>
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Switch
+                android:id="@+id/switch4"
+                android:layout_width="188dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:checked="false"
+                android:onClick="onAlternateFor"
+                android:text="@string/alternate" />
+
+            <EditText
+                android:id="@+id/editText3"
+                android:layout_width="60dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ems="10"
+                android:hint="@string/duration"
+                android:inputType="number"
+                android:text="@string/ten" />
+
+            <TextView
+                android:id="@+id/textView4"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/seconds"
+                android:textColor="@color/black" />
+        </LinearLayout>
+
         <ProgressBar
             android:id="@+id/progressBar"
             style="?android:attr/progressBarStyle"
             android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
+            android:layout_height="wrap_content"
             android:visibility="invisible" />
 
     </LinearLayout>
