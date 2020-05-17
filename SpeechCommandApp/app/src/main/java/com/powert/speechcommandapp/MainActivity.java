@@ -62,6 +62,9 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         try {
+            TextView save_message = findViewById(R.id.textView);
+            save_message.setText(save_message.getText() + " " + RECORD_FILE_PATH);
+
             this.wavTransform = new WavTransform(RECORD_FILE_PATH);
         } catch (IOException e) {
             e.printStackTrace();
@@ -232,6 +235,13 @@ public class MainActivity extends AppCompatActivity {
                         end_time = System.currentTimeMillis();
 
                         timer -= (int) (end_time - start_time);
+
+                        // Wait given millis between each iteration
+                        try {
+                            Thread.sleep(Integer.parseInt(String.valueOf(((EditText) findViewById(R.id.editText4)).getText())));
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
                         //Log.d(LOG_TAG, "Iteration: " + i + " - Residual time: " + timer + " - Version: " + ((i % 2 == 0) ? "Low" : "High"));
                     }
                 }
@@ -246,6 +256,13 @@ public class MainActivity extends AppCompatActivity {
                     selected_module = (module_idx == 1) ? this.module_high : this.module_low;
                     // Log.d(LOG_TAG, "time #" + times + " => " + module_idx);
                     outputTensor = selected_module.forward(IValue.from(inputTensor)).toTensor();
+
+                    // Wait given millis between each iteration
+                    try {
+                        Thread.sleep(Integer.parseInt(String.valueOf(((EditText) findViewById(R.id.editText4)).getText())));
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                 }
 
             float[] scores = outputTensor.getDataAsFloatArray();

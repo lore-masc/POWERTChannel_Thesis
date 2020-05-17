@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">Sink</string>
+    <string name="start">Start</string>
+    <string name="stop">Stop</string>
+    <string name="cpu_freq">Data are stored in</string>
+    <string name="delay">Delay: </string>
+    <string name="ms">ms</string>
+    <string name="milliseconds">milliseconds</string>
+    <string name="thousand">1000</string>
+</resources>

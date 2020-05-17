@@ -7,12 +7,17 @@
         <item>High</item>
         <item>Combined</item>
     </string-array>
-    <string name="message_store">The last registration is saved into storage root as recorded_audio.wav</string>
-    <string name="duration">times</string>
+    <string name="message_store">The last registration is saved in </string>
+    <string name="duration_t">times</string>
+    <string name="duration_s">seconds</string>
+    <string name="duration_ms">milliseconds</string>
     <string name="times">#</string>
     <string name="seconds">s</string>
+    <string name="millis">ms</string>
     <string name="one">1</string>
     <string name="ten">10</string>
+    <string name="hundred">100</string>
     <string name="repeat">Repeat for: </string>
     <string name="alternate">Alternate for: </string>
+    <string name="wait">Wait after each iteration for: </string>
 </resources>
