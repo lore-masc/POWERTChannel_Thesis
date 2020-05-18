@@ -105,15 +105,24 @@ public class MainActivity extends AppCompatActivity {
         try{
             FileOutputStream fileOutputStream = new FileOutputStream(file, true);
             OutputStreamWriter writer = new OutputStreamWriter(fileOutputStream);
-            writer.write("timestamp, cpu0, cpu1, cpu2, cpu3, cpu_temp, cpu_load, battery_temp, battery_power\n");
+            writer.write("timestamp, cpu0, cpu1, cpu2, cpu3, cpu_temp, cpu_load, ram, battery_temp, battery_power\n");
 
             while (this.recording) {
                 IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
                 BatteryReceiver batteryReceiver = new BatteryReceiver();
                 registerReceiver(batteryReceiver, filter);
 
-                int cpu_load = ((ActivityManager) getSystemService(Context.ACTIVITY_SERVICE))
-                        .getRunningServices(Integer.MAX_VALUE).size();
+                ActivityManager activityManager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+//                        .getRunningServices(Integer.MAX_VALUE).size();
+                int cpu_load = 0;
+                for (Thread t : Thread.getAllStackTraces().keySet()) {
+                    if (t.getState()==Thread.State.RUNNABLE) cpu_load++;
+                }
+
+                ActivityManager.MemoryInfo mi = new ActivityManager.MemoryInfo();
+                activityManager.getMemoryInfo(mi);
+                double availableMegs = mi.availMem / 0x100000L;
+                double used_ram = (double)mi.totalMem / 0x100000L - availableMegs;
 
                 String cpu0_freq = get_param("/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq");
                 String cpu1_freq = get_param("/sys/devices/system/cpu/cpu1/cpufreq/scaling_cur_freq");
@@ -125,7 +134,8 @@ public class MainActivity extends AppCompatActivity {
 
                 writer.append(System.currentTimeMillis() + ", " +
                         cpu0_freq + ", " + cpu1_freq + ", " + cpu2_freq + ", " + cpu3_freq + ", " +
-                        cpu_temp + ", " + cpu_load + ", " + battery_temp + ", " + battery_power + "\n");
+                        cpu_temp + ", " + cpu_load + ", " + used_ram + ", " +
+                        battery_temp + ", " + battery_power + "\n");
 
                 try {
                     Thread.sleep(Long.parseLong(String.valueOf(((EditText) findViewById(R.id.editText)).getText())));

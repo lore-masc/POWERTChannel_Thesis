@@ -1,8 +1,8 @@
 # Speech Recognition CNN
 
-This Python script implements a double version of DenseNet in order to use a different and notable amount of computable resources.
+This Python script implements a double version of ResNet in order to use a different and notable amount of computable resources.
 
-The network will be able to classify, once trained, vocal commands. 
+The network will be able to classify, once trained, some vocal command classes. 
 
 ## Requirements
 
@@ -55,7 +55,12 @@ In this use case, a double version of the network exists, so it is possible to c
 python export_mobile_model.py -d data/input/recorded_audio.wav -v high
 ```
 
-At the end, you can find a *.pth* file containing the network trace.
+In the end, you can find a *.pt* file containing the network trace. You can load it as a pre-trained Module into a mobile Application.
+
+In terms of efficiency and size, a quantized version of the network should be better. 
+```bash
+python export_mobile_model.py -d data/input/recorded_audio.wav -v low -q
+```
 
 ## Code details
 ### How to transform wav audio files into tensors
@@ -92,8 +97,8 @@ print("%.2f\t\t| %.2f" % (params / (1000 ** 2), macs / (1000 ** 3)))
 Results:
 |Name 		|Params(M)	| FLOPs(G)|
 |--|--|--|
-|dn_22_12	| 0.07		| 1.27|
-|dn_250_24	| 15.33		| 220.13|
+|ResNet_18	| 11.18		| 1.69|
+|ResNext101_32x8d	| 86.76		| 15.84|
 
 ### How to store and to load trained weights
 If requested by input, the ``main.py`` script can save the trained weights in a indicate *.pth* file.
@@ -115,6 +120,21 @@ net.eval()
 traced_script_module = torch.jit.trace(net, audio)
 traced_script_module.save(export_model_path)
 ```
+
+### How to export a quantized version
+In the case of neural networks equipped with convolutional modules, the better quantization is the *Post Training Static Quantization*. 
+You can refer to the official documentation of PyTorch [here](https://pytorch.org/tutorials/advanced/static_quantization_tutorial.html#post-training-static-quantization).
+Now, we can summarize the main steps that characterize a quantization procedure.
+- You have some quantization engines available in the system. There are two main engines: *fbgemm* and *qnnpack*. The last one was chosen in this case.
+**If you use Windows systems** or, for any reason, you cannot take advantage of any quantization engine, then you can use Google Colab.
+- You have to develop a quantizable version of the model. Torchvision already provides the main possible quantizable models in its [repository](https://github.com/pytorch/vision/tree/master/torchvision/models/quantization).
+A single channel input is required for this occasion, so the first convolutional layer of the network has been replaced. You can see it in ``_resnet`` function, available [here](https://github.com/lore-masc/POWERTChannel_Thesis/blob/master/SpeechRec/model/resnet.py#L46). 
+- **Warning: Quantizable does not mean Quantized!** Training is done before then the conversion. 
+It is advisable to implement an own ``quantize_model`` function, as [here](https://github.com/lore-masc/POWERTChannel_Thesis/blob/master/SpeechRec/model/resnet.py#L23).
+- In order to reach an acceptable accuracy in the quantized model, you have to perform a sort of training calibration, as you can see in the same method.
+In the calibration, you can pass a few random samples into the network.
+
+Other rules are described in the [Quantization section](https://pytorch.org/docs/stable/quantization.html#quantization-workflows) of the official documentation.
 
 ## License
 All resources here posted are open-source.
