@@ -74,7 +74,7 @@ public class MainActivity extends AppCompatActivity {
 
         try {
             module_low = Module.load(assetFilePath(this, LOW_MODEL));
-            Log.d(LOG_TAG, "Low model opens with success");
+//            Log.d(LOG_TAG, "Low model opens with success");
         } catch (Exception e) {
             String message = "Error reading assets during low model opening";
             Log.e(LOG_TAG, message, e);
@@ -84,7 +84,7 @@ public class MainActivity extends AppCompatActivity {
 
         try {
             module_high = Module.load(assetFilePath(this, HIGH_MODEL));
-            Log.d(LOG_TAG, "High model opens with success");
+//            Log.d(LOG_TAG, "High model opens with success");
         } catch (Exception e) {
             String message = "Error reading assets during high model opening";
             Log.e(LOG_TAG, message, e);
@@ -133,14 +133,14 @@ public class MainActivity extends AppCompatActivity {
 
         switch(btn_state){
             case "0":
-                Log.d(LOG_TAG, "Start Recording");
+//                Log.d(LOG_TAG, "Start Recording");
                 this.wavTransform.startRecording();
                 btn.setTag(1);
                 btn.setBackgroundTintList(ContextCompat.getColorStateList(getApplicationContext(), R.color.black));
                 btn.setImageTintList(ContextCompat.getColorStateList(getApplicationContext(), R.color.red));
                 break;
             case "1":
-                Log.d(LOG_TAG, "Stop Recording");
+//                Log.d(LOG_TAG, "Stop Recording");
                 this.wavTransform.stopRecording();
                 btn.setTag(0);
                 btn.setBackgroundTintList(ContextCompat.getColorStateList(getApplicationContext(), R.color.gray));
@@ -184,7 +184,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void startRecognition() {
-        Log.d(LOG_TAG, "Start recognition");
+//        Log.d(LOG_TAG, "Start recognition");
 
         Random random = new Random();
         long selected_id;
@@ -209,8 +209,8 @@ public class MainActivity extends AppCompatActivity {
                 for (int j = 0; j < unsqueezePowerToDb[i][0].length; j++)
                     mfccInput[i*unsqueezePowerToDb[i][0].length + j] = (float) unsqueezePowerToDb[i][0][j];
 
-            Log.d(LOG_TAG, "MFCC Input======> " + Arrays.toString(mfccInput));
-            Log.d(LOG_TAG, "MFCC Input======> " + mfccInput.length);
+//            Log.d(LOG_TAG, "MFCC Input======> " + Arrays.toString(mfccInput));
+//            Log.d(LOG_TAG, "MFCC Input======> " + mfccInput.length);
             long[] shape = {1, 1, 40, 32};
             Tensor inputTensor = Tensor.fromBlob(mfccInput, shape);
             Tensor outputTensor = null;
@@ -238,11 +238,14 @@ public class MainActivity extends AppCompatActivity {
 
                         // Wait given millis between each iteration
                         try {
-                            Thread.sleep(Integer.parseInt(String.valueOf(((EditText) findViewById(R.id.editText4)).getText())));
+                            String editText4_txt = ((EditText) findViewById(R.id.editText4)).getText().toString();
+                            int delay = Integer.parseInt(editText4_txt);
+                            if (delay > 0)
+                                Thread.sleep(delay);
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
-                        //Log.d(LOG_TAG, "Iteration: " + i + " - Residual time: " + timer + " - Version: " + ((i % 2 == 0) ? "Low" : "High"));
+//                        Log.d(LOG_TAG, "Iteration: " + i + " - Residual time: " + timer + " - Version: " + ((i % 2 == 0) ? "Low" : "High"));
                     }
                 }
             else
@@ -259,7 +262,10 @@ public class MainActivity extends AppCompatActivity {
 
                     // Wait given millis between each iteration
                     try {
-                        Thread.sleep(Integer.parseInt(String.valueOf(((EditText) findViewById(R.id.editText4)).getText())));
+                        String editText4_txt = ((EditText) findViewById(R.id.editText4)).getText().toString();
+                        int delay = Integer.parseInt(editText4_txt);
+                        if (delay > 0)
+                            Thread.sleep(delay);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
@@ -267,7 +273,7 @@ public class MainActivity extends AppCompatActivity {
 
             float[] scores = outputTensor.getDataAsFloatArray();
 
-            Log.d(LOG_TAG, "Output tensor======> " + Arrays.toString(scores));
+//            Log.d(LOG_TAG, "Output tensor======> " + Arrays.toString(scores));
 
             float maxScore = -Float.MAX_VALUE;
             int maxScoreIdx = -1;
@@ -279,7 +285,7 @@ public class MainActivity extends AppCompatActivity {
             }
             this.className = CLASSES[maxScoreIdx];
 
-            Log.d(LOG_TAG, className);
+//            Log.d(LOG_TAG, className);
         } catch (IOException | WavFileException e) {
             e.printStackTrace();
         }

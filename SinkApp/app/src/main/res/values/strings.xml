@@ -6,5 +6,6 @@
     <string name="delay">Delay: </string>
     <string name="ms">ms</string>
     <string name="milliseconds">milliseconds</string>
-    <string name="thousand">1000</string>
+    <string name="zero">0</string>
+    <string name="overhead">Overhead required:</string>
 </resources>

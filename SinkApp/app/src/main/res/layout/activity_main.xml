@@ -36,7 +36,7 @@
                 android:ems="10"
                 android:hint="@string/milliseconds"
                 android:inputType="number|textPersonName"
-                android:text="@string/thousand" />
+                android:text="@string/zero" />
 
             <TextView
                 android:id="@+id/textView3"
@@ -60,6 +60,13 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/cpu_freq"
+            android:textColor="@android:color/black" />
+
+        <TextView
+            android:id="@+id/textView4"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/overhead"
             android:textColor="@android:color/black" />
     </LinearLayout>
 
