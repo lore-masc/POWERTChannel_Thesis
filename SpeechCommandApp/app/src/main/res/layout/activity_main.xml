@@ -80,6 +80,13 @@
             android:onClick="onStartRecognition"
             android:text="@string/recognition" />
 
+        <TextView
+            android:id="@+id/textView7"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAlignment="center"
+            android:textColor="@color/black" />
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -154,7 +161,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:ems="10"
-                android:hint="@string/duration_s"
+                android:hint="@string/duration_ms"
                 android:inputType="number"
                 android:text="@string/ten" />
 
@@ -163,7 +170,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="@string/seconds"
+                android:text="@string/millis"
                 android:textColor="@color/black" />
         </LinearLayout>
 

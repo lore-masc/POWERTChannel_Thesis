@@ -34,7 +34,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Arrays;
 import java.util.Random;
 
 
@@ -55,6 +54,8 @@ public class MainActivity extends AppCompatActivity {
     private String CLASSES[] = {"unknown", "silence", "yes", "no",
             "up", "down", "left", "right", "on",
             "off", "stop", "go"};
+
+    private long forward_time = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -176,6 +177,9 @@ public class MainActivity extends AppCompatActivity {
                 editText.append(className + " ");
                 progressBar.setVisibility(View.GONE);
 
+                TextView textView7 = findViewById(R.id.textView7);
+                textView7.setText("Forward time: " + forward_time + " ms");
+
                 if (!save)
                     new File(RECORD_FILE_PATH).delete();
             }
@@ -227,14 +231,11 @@ public class MainActivity extends AppCompatActivity {
 
             if (switch4.isChecked())
                 for (int i = 0; i < times; i++) {
-                    timer = Integer.parseInt(String.valueOf(((EditText) findViewById(R.id.editText3)).getText())) * 1000;
+                    timer = Integer.parseInt(String.valueOf(((EditText) findViewById(R.id.editText3)).getText()));
                     selected_module = (i % 2 == 0) ? this.module_low: this.module_high;
                     while (timer >= 0) {
                         start_time = System.currentTimeMillis();
                         outputTensor = selected_module.forward(IValue.from(inputTensor)).toTensor();
-                        end_time = System.currentTimeMillis();
-
-                        timer -= (int) (end_time - start_time);
 
                         // Wait given millis between each iteration
                         try {
@@ -246,6 +247,9 @@ public class MainActivity extends AppCompatActivity {
                             e.printStackTrace();
                         }
 //                        Log.d(LOG_TAG, "Iteration: " + i + " - Residual time: " + timer + " - Version: " + ((i % 2 == 0) ? "Low" : "High"));
+                        end_time = System.currentTimeMillis();
+                        this.forward_time = (end_time - start_time);
+                        timer -= (int) this.forward_time;
                     }
                 }
             else
@@ -258,7 +262,11 @@ public class MainActivity extends AppCompatActivity {
 
                     selected_module = (module_idx == 1) ? this.module_high : this.module_low;
                     // Log.d(LOG_TAG, "time #" + times + " => " + module_idx);
+
+                    start_time = System.currentTimeMillis();
                     outputTensor = selected_module.forward(IValue.from(inputTensor)).toTensor();
+                    end_time = System.currentTimeMillis();
+                    this.forward_time = end_time - start_time;
 
                     // Wait given millis between each iteration
                     try {

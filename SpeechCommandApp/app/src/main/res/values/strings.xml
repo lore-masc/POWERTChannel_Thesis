@@ -15,7 +15,7 @@
     <string name="seconds">s</string>
     <string name="millis">ms</string>
     <string name="one">1</string>
-    <string name="ten">10</string>
+    <string name="ten">10000</string>
     <string name="hundred">100</string>
     <string name="repeat">Repeat for: </string>
     <string name="alternate">Alternate for: </string>
