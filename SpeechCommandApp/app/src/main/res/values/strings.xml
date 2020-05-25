@@ -20,4 +20,10 @@
     <string name="repeat">Repeat for: </string>
     <string name="alternate">Alternate for: </string>
     <string name="wait">Wait after each iteration for: </string>
+    <string name="PoC">PoC</string>
+    <string name="debug">Debug</string>
+    <string name="send">Send a message</string>
+    <string name="message">Type here the message to send to sink</string>
+    <string name="done">Done</string>
+    <string name="random">Random</string>
 </resources>
