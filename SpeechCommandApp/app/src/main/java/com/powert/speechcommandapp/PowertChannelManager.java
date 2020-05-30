@@ -1,68 +1,70 @@
 package com.powert.speechcommandapp;
 
 import android.content.Context;
+import android.os.Process;
 import android.util.Log;
 
 import java.io.IOException;
-import java.math.BigInteger;
-import java.nio.ByteBuffer;
-import java.nio.IntBuffer;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.Random;
 
 public class PowertChannelManager {
     private ModuleForwarder moduleForwarder;
-    public static final int LONG_STREAM_SIZE = 180;
+    public static final int LONG_STREAM_SIZE = 30;
     public static final int PREAMBLE_SIZE = 5;
-    public static final long TIME = 200;                   // [ms]
-    public static final long WAIT = 15;                     // [ms]
-    private float[] input;
+    public static final long TIME = 500;                   // [ms]
 
     PowertChannelManager(Context context) throws IOException {
         this.moduleForwarder = new ModuleForwarder(context);
-        this.input = new float[40*32];
+        float[] input = new float[40 * 32];
 
         Random random = new Random();
-        for(int i = 0; i < this.input.length; i++)
-            this.input[i] = random.nextFloat() * 100 - 200;
-        this.moduleForwarder.prepare(this.input);
+        for(int i = 0; i < input.length; i++)
+            input[i] = random.nextFloat() * 100 - 200;
+        this.moduleForwarder.prepare(input);
     }
 
     private void sendStreamBits(int bits[]) {
-        long start, end;
+        long start, required;
+
         for(int i = 0; i < bits.length; i++) {
             long timer = PowertChannelManager.TIME;
-            if (bits[i] == 1)
-                while (timer > 0) {
+            if (bits[i] == 1) {
+                android.os.Process.setThreadPriority(Process.THREAD_PRIORITY_FOREGROUND);
+//                while (timer > 5) {
                     start = System.currentTimeMillis();
-                    this.moduleForwarder.forward(ModuleForwarder.VERSION.HIGH);
+                    moduleForwarder.forward(ModuleForwarder.VERSION.HIGH);
+                    required = System.currentTimeMillis() - start;
+//                    Log.d("POWERT-1", "times " + required);
+                if (PowertChannelManager.TIME - required > 1) {
+                    while (timer > 0) {
+                        start = System.currentTimeMillis();
+                        this.moduleForwarder.forward(ModuleForwarder.VERSION.LOW);
+                        required = System.currentTimeMillis() - start;
+                        timer -= required;
+                    }
+                }
+//                    timer -= required;
+//                }
+                Log.d(i + "POWERT-1", "" + timer);
+            } else {
+                android.os.Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
+
+                start = System.currentTimeMillis();
+                this.moduleForwarder.forward(ModuleForwarder.VERSION.LOW);
+                required = System.currentTimeMillis() - start;
+
+                if (PowertChannelManager.TIME - 10 - required > 0) {
                     try {
-                        Thread.sleep(PowertChannelManager.WAIT);
+                        Thread.sleep(PowertChannelManager.TIME - required - 2);
+//                        Thread.sleep(PowertChannelManager.TIME);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
-
-                    end = System.currentTimeMillis();
-                    timer -= (end - start);
                 }
-            else
-                while (timer > 0) {
-                    start = System.currentTimeMillis();
-                    this.moduleForwarder.forward(ModuleForwarder.VERSION.LOW);
-                    try {
-                        Thread.sleep(PowertChannelManager.WAIT);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-
-                    end = System.currentTimeMillis();
-                    timer -= (end - start);
-                }
-            Log.d("POWERT", "bit " + i);
+                Log.d(i + "POWERT-0", " " + (PowertChannelManager.TIME - (System.currentTimeMillis() - start)));
+            }
+//          Log.d("POWERT", "Bit " + i + " sended.");
         }
-
-
     }
 
     /**
@@ -70,11 +72,12 @@ public class PowertChannelManager {
      */
     private void sendLongStream () {
         int[] longStream = new int[PowertChannelManager.LONG_STREAM_SIZE];
+
         for (int i = 0; i < longStream.length; i++)
             if (i % 2 == 0)
-                longStream[i] = 1;
-            else
                 longStream[i] = 0;
+            else
+                longStream[i] = 1;
         this.sendStreamBits(longStream);
     }
 
@@ -83,16 +86,27 @@ public class PowertChannelManager {
      */
     private void sendPreamble () {
         int[] preambleStream = new int[PowertChannelManager.PREAMBLE_SIZE];
-        for (int i = 0; i < preambleStream.length; i++)
-            preambleStream[i] = 0;
         this.sendStreamBits(preambleStream);
     }
 
     /**
-     * Send a message.
+     * Send a message converting the passed string into a binary encode.
+     * The package will be composed with a long bit stream and a short preamble.
      * @param message String of message to send.
      */
     void sendPackage(String message) {
+        int[] bits = getBitArray(message);
+        this.sendLongStream();
+        this.sendPreamble();
+        this.sendStreamBits(bits);
+    }
+
+    /**
+     * Convert a string into int array.
+     * @param message String to convert.
+     * @return the array of bits.
+     */
+    static int[] getBitArray(String message) {
         byte[] bytes = message.getBytes();
         StringBuilder binary = new StringBuilder();
         for (byte b : bytes) {
@@ -106,10 +120,7 @@ public class PowertChannelManager {
         int[] bits = new int[binary.length()];
         for (int i = 0; i < bits.length; i++)
             bits[i] = Integer.parseInt(stringBinary.substring(i, i+1));
-
-        this.sendLongStream();
-        this.sendPreamble();
-        this.sendStreamBits(bits);
+        return bits;
     }
 
 }

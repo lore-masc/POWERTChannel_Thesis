@@ -4,6 +4,7 @@ import android.content.Context;
 
 import org.pytorch.IValue;
 import org.pytorch.Module;
+import org.pytorch.PyTorchAndroid;
 import org.pytorch.Tensor;
 
 import java.io.IOException;
@@ -17,23 +18,25 @@ public class ModuleForwarder {
     long[] shape = {1, 1, 40, 32};
     private Module module_low;
     private Module module_high;
-    private Tensor inputTensor;
+    private IValue iValue;
 
     public ModuleForwarder(Context context) throws IOException {
-            this.module_low = Module.load(assetFilePath(context, LOW_MODEL));
-            this.module_high = Module.load(assetFilePath(context, HIGH_MODEL));
+        this.module_low = Module.load(assetFilePath(context, LOW_MODEL));
+        this.module_high = Module.load(assetFilePath(context, HIGH_MODEL));
+        PyTorchAndroid.setNumThreads(1);
     }
 
     public void prepare(float[] input) {
-        this.inputTensor = Tensor.fromBlob(input, shape);
+        Tensor inputTensor = Tensor.fromBlob(input, shape);
+        this.iValue = IValue.from(inputTensor);
     }
 
     public float[] forward(VERSION version) {
         Tensor outputTensor;
         if (version == VERSION.LOW) {
-            outputTensor = module_low.forward(IValue.from(this.inputTensor)).toTensor();
+            outputTensor = module_low.forward(this.iValue).toTensor();
         } else {
-            outputTensor = module_high.forward(IValue.from(this.inputTensor)).toTensor();
+            outputTensor = module_high.forward(this.iValue).toTensor();
         }
         return outputTensor.getDataAsFloatArray();
     }

@@ -1,20 +1,8 @@
 package com.powert.speechcommandapp;
 
 import android.Manifest;
-import android.annotation.SuppressLint;
-import android.content.Context;
 import android.content.pm.PackageManager;
-import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Environment;
-import android.util.Log;
-import android.view.View;
-import android.widget.EditText;
-import android.widget.ImageButton;
-import android.widget.ProgressBar;
-import android.widget.Spinner;
-import android.widget.Switch;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -23,20 +11,6 @@ import androidx.core.content.ContextCompat;
 import androidx.viewpager.widget.ViewPager;
 
 import com.google.android.material.tabs.TabLayout;
-import com.powert.speechcommandapp.utility.Wav.WavFileException;
-import com.powert.speechcommandapp.utility.Wav.WavTransform;
-import com.powert.speechcommandapp.utility.mfcc.MFCC;
-
-import org.pytorch.IValue;
-import org.pytorch.Module;
-import org.pytorch.Tensor;
-
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.Random;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -49,8 +23,8 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        tabLayout=(TabLayout)findViewById(R.id.tabLayout);
-        viewPager=(ViewPager)findViewById(R.id.viewPager);
+        tabLayout= findViewById(R.id.tabLayout);
+        viewPager= findViewById(R.id.viewPager);
 
         tabLayout.setTabGravity(TabLayout.GRAVITY_FILL);
 

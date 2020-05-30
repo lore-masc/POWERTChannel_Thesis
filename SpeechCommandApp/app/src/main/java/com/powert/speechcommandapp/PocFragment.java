@@ -1,11 +1,11 @@
 package com.powert.speechcommandapp;
 
 import android.annotation.SuppressLint;
-import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,7 +20,6 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import java.io.IOException;
-import java.util.BitSet;
 import java.util.Random;
 
 public class PocFragment extends Fragment {
@@ -40,10 +39,21 @@ public class PocFragment extends Fragment {
             button.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    EditText editText5 = ll.findViewById(R.id.editText5);
+                    final EditText editText5 = ll.findViewById(R.id.editText5);
+                    final Button button = ll.findViewById(R.id.button);
+                    final Button button2 = ll.findViewById(R.id.button2);
                     final Editable editText5_editable = editText5.getText();
+
                     @SuppressLint("StaticFieldLeak")
-                    AsyncTask<Void, Void, Void> task = new AsyncTask<Void, Void, Void>() {
+                    AsyncTask<Void, Integer, Void> task = new AsyncTask<Void, Integer, Void>() {
+                        @Override
+                        protected void onPreExecute() {
+                            super.onPreExecute();
+                            editText5.setEnabled(false);
+                            button.setEnabled(false);
+                            button2.setEnabled(false);
+                        }
+
                         @Override
                         protected Void doInBackground(Void... voids) {
                             String message = editText5_editable.toString();
@@ -55,6 +65,9 @@ public class PocFragment extends Fragment {
                         protected void onPostExecute(Void v) {
                             super.onPostExecute(v);
                             Toast.makeText(getActivity().getApplicationContext(), "Message sended", Toast.LENGTH_SHORT).show();
+                            editText5.setEnabled(true);
+                            button.setEnabled(true);
+                            button2.setEnabled(true);
                         }
                     };
                     task.execute();
@@ -87,8 +100,9 @@ public class PocFragment extends Fragment {
 
             @Override
             public void afterTextChanged(Editable s) {
+                EditText editText5 = ll.findViewById(R.id.editText5);
                 TextView textView8 = ll.findViewById(R.id.textView8);
-                int bits = BitSet.valueOf(editText5.getText().toString().getBytes()).length();
+                int bits = PowertChannelManager.getBitArray(editText5.getText().toString()).length;
                 long time_required =
                         PowertChannelManager.LONG_STREAM_SIZE*PowertChannelManager.TIME
                         + PowertChannelManager.PREAMBLE_SIZE*PowertChannelManager.TIME
