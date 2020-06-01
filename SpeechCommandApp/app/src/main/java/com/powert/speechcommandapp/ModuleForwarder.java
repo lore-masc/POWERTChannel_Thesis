@@ -23,7 +23,7 @@ public class ModuleForwarder {
     public ModuleForwarder(Context context) throws IOException {
         this.module_low = Module.load(assetFilePath(context, LOW_MODEL));
         this.module_high = Module.load(assetFilePath(context, HIGH_MODEL));
-        PyTorchAndroid.setNumThreads(1);
+//        PyTorchAndroid.setNumThreads(1);
     }
 
     public void prepare(float[] input) {

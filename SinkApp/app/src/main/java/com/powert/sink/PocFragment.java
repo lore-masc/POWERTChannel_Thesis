@@ -7,6 +7,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Process;
 import android.util.Log;
+import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -25,9 +26,9 @@ import java.util.Arrays;
 
 public class PocFragment extends Fragment {
     private final float WAIT_START = 496;            // [ms]
-    private final float BIT_THRESHOLD_START = 0.10f;
+    private final float BIT_THRESHOLD_START = 0.50f;
     private final int PREAMBLE_SIZE = 5;
-    private final int DIFFERENT_TIME_THRESHOLD = 10;
+    private final int DIFFERENT_TIME_THRESHOLD = 2;
     private final int THRESHOLD_WATCHER = 10;
 
     public PocFragment () {
@@ -72,10 +73,34 @@ public class PocFragment extends Fragment {
 
                             ArrayList<Integer> preamble = new ArrayList<>();
                             android.os.Process.setThreadPriority(Process.THREAD_PRIORITY_FOREGROUND);
+
+                            // synchronize on first max point
+//                            ArrayList<Long> log_timestamps = new ArrayList();
+                            ArrayList<Float> log_loads = new ArrayList();
+                            boolean peak = false;
+                            do {
+                                float start_workload = Math.max(0f, Utils.readCore(Math.round(20)) - 0.01f);
+//                                log_timestamps.add(System.currentTimeMillis());
+                                log_loads.add(start_workload);
+                                int n = log_loads.size();
+                                if (n > 1 && log_loads.get(n-2) < 0.5f && log_loads.get(n-1) > 0.95f)
+                                    peak = true;
+                            } while (!peak);
+
+//                            Log.d("SINK", String.valueOf(log_loads));
+                            log_loads.clear();
+                            log_loads = null;
+
                             while (recording[0]) {
                                 long start = System.currentTimeMillis();
+                                try {
+                                    Thread.sleep((long) (WAIT_START+5));
+                                } catch (InterruptedException e) {
+                                    e.printStackTrace();
+                                }
 
-                                float sum = Math.max(0f, Utils.readCore(Math.round(WAIT_START)) - 0.01f);
+                                float sum = Math.max(0f, Utils.readCore(Math.round(20)) - 0.01f);
+
                                 Log.d("SINK", "" + (System.currentTimeMillis() - start));
                                 this.cpu_sums.add(sum);
 
@@ -99,7 +124,7 @@ public class PocFragment extends Fragment {
                                 // synchronization
                                 if (!this.synch) {
                                     if (current_bit == last_bit) {
-                                        threshold = this.averageArray(this.cpu_sums);
+//                                        threshold = this.averageArray(this.cpu_sums);
                                         this.count_different_times = 0;
                                         preamble.clear();
                                     }

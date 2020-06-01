@@ -34,7 +34,7 @@ public class PowertChannelManager {
                     start = System.currentTimeMillis();
                     moduleForwarder.forward(ModuleForwarder.VERSION.HIGH);
                     required = System.currentTimeMillis() - start;
-//                    Log.d("POWERT-1", "times " + required);
+                    Log.d("POWERT-1", "times " + required);
                 if (PowertChannelManager.TIME - required > 1) {
                     while (timer > 0) {
                         start = System.currentTimeMillis();
@@ -43,24 +43,29 @@ public class PowertChannelManager {
                         timer -= required;
                     }
                 }
-//                    timer -= required;
+                    timer -= required;
 //                }
                 Log.d(i + "POWERT-1", "" + timer);
             } else {
-                android.os.Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
+                android.os.Process.setThreadPriority(Process.THREAD_PRIORITY_FOREGROUND);
 
                 start = System.currentTimeMillis();
-                this.moduleForwarder.forward(ModuleForwarder.VERSION.LOW);
-                required = System.currentTimeMillis() - start;
+                while(true)
+                    if (System.currentTimeMillis() - start >= PowertChannelManager.TIME)
+                        break;
 
-                if (PowertChannelManager.TIME - 10 - required > 0) {
-                    try {
-                        Thread.sleep(PowertChannelManager.TIME - required - 2);
-//                        Thread.sleep(PowertChannelManager.TIME);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
+
+//                start = System.currentTimeMillis();
+//                this.moduleForwarder.forward(ModuleForwarder.VERSION.LOW);
+//                required = System.currentTimeMillis() - start;
+
+//                if (PowertChannelManager.TIME - 10 - required > 0) {
+//                    try {
+//                        Thread.sleep(PowertChannelManager.TIME - required - 2);
+//                    } catch (InterruptedException e) {
+//                        e.printStackTrace();
+//                    }
+//                }
                 Log.d(i + "POWERT-0", " " + (PowertChannelManager.TIME - (System.currentTimeMillis() - start)));
             }
 //          Log.d("POWERT", "Bit " + i + " sended.");
