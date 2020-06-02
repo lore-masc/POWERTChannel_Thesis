@@ -25,11 +25,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 public class PocFragment extends Fragment {
-    private final float WAIT_START = 496;            // [ms]
+    private final float WAIT_START = 500;            // [ms]
+    private final long READ_CORES = 20;              // [ms]
     private final float BIT_THRESHOLD_START = 0.50f;
     private final int PREAMBLE_SIZE = 5;
-    private final int DIFFERENT_TIME_THRESHOLD = 2;
-    private final int THRESHOLD_WATCHER = 10;
+    private final int DIFFERENT_TIME_THRESHOLD = 6;
+    private final int THRESHOLD_WATCHER = 4;
 
     public PocFragment () {
 
@@ -52,24 +53,24 @@ public class PocFragment extends Fragment {
                     recording[0] = true;
 
                     @SuppressLint("StaticFieldLeak")
-                    AsyncTask<Void, Float, Void> task = new AsyncTask<Void, Float, Void>() {
-//                        int numCores = Utils.getNumCores();
-                        float wait_variation = WAIT_START;         // [ms]
+                    AsyncTask<Void, String, Void> task = new AsyncTask<Void, String, Void>() {
                         int count_different_times = 0;
                         float threshold = BIT_THRESHOLD_START;
                         boolean synch = false;
                         boolean input_mode = false;
+                        int iterations;
                         int max_different_times = 0;
                         float max_variation_different_times = 0;
                         ArrayList<Float> cpu_sums = new ArrayList<>();
                         int[] word = new int[8];
                         int word_idx = 0;
+                        long overhead;
 
                         @RequiresApi(api = Build.VERSION_CODES.O)
                         @Override
                         protected Void doInBackground(Void... voids) {
                             int last_bit = 0, current_bit = 0;
-                            float mode = 0f;
+                            String mode = "Not synchronized";
 
                             ArrayList<Integer> preamble = new ArrayList<>();
                             android.os.Process.setThreadPriority(Process.THREAD_PRIORITY_FOREGROUND);
@@ -79,7 +80,7 @@ public class PocFragment extends Fragment {
                             ArrayList<Float> log_loads = new ArrayList();
                             boolean peak = false;
                             do {
-                                float start_workload = Math.max(0f, Utils.readCore(Math.round(20)) - 0.01f);
+                                float start_workload = Math.max(0f, Utils.readCore(Math.round(READ_CORES)) - 0.01f);
 //                                log_timestamps.add(System.currentTimeMillis());
                                 log_loads.add(start_workload);
                                 int n = log_loads.size();
@@ -92,21 +93,27 @@ public class PocFragment extends Fragment {
                             log_loads = null;
 
                             while (recording[0]) {
-                                long start = System.currentTimeMillis();
-                                try {
-                                    Thread.sleep((long) (WAIT_START+5));
-                                } catch (InterruptedException e) {
-                                    e.printStackTrace();
+
+                                long p1 = System.currentTimeMillis();
+
+                                if (this.iterations >= 1) {
+                                    Log.d("OVERHEAD", "" + overhead);
+                                    try {
+                                        Thread.sleep((long) WAIT_START-overhead);
+                                    } catch (InterruptedException e) {
+                                        e.printStackTrace();
+                                    }
                                 }
 
-                                float sum = Math.max(0f, Utils.readCore(Math.round(20)) - 0.01f);
+                                long start = System.currentTimeMillis();
+                                float sum = Math.max(0f, Utils.readCore(Math.round(READ_CORES)) - 0.01f);
 
-                                Log.d("SINK", "" + (System.currentTimeMillis() - start));
+//                                Log.d("SINK1", "" + (System.currentTimeMillis() - start));
                                 this.cpu_sums.add(sum);
 
-                                float workload_variance = this.variance(this.cpu_sums);
-                                float workload_average = this.averageArray(this.cpu_sums);
-                                Log.d("SINK", "" + (System.currentTimeMillis() - start));
+//                                float workload_variance = this.variance(this.cpu_sums);
+//                                float workload_average = this.averageArray(this.cpu_sums);
+//                                Log.d("SINK2", "" + (System.currentTimeMillis() - start));
 
                                 if (sum >= threshold) {
                                     current_bit = 1;
@@ -114,8 +121,8 @@ public class PocFragment extends Fragment {
                                     current_bit = 0;
                                 }
 
-                                publishProgress(null, threshold, WAIT_START, workload_average, workload_variance, sum, mode);
-                                Log.d("SINK", "" + (System.currentTimeMillis() - start));
+                                publishProgress("", String.valueOf(threshold), String.valueOf(sum), mode, "");
+//                                Log.d("SINK3", "" + (System.currentTimeMillis() - start));
 
                                 if (this.cpu_sums.size() > THRESHOLD_WATCHER) {
                                     this.cpu_sums.remove(0);
@@ -124,7 +131,7 @@ public class PocFragment extends Fragment {
                                 // synchronization
                                 if (!this.synch) {
                                     if (current_bit == last_bit) {
-//                                        threshold = this.averageArray(this.cpu_sums);
+                                        threshold = this.averageArray(this.cpu_sums);
                                         this.count_different_times = 0;
                                         preamble.clear();
                                     }
@@ -134,7 +141,7 @@ public class PocFragment extends Fragment {
 
                                         if (this.count_different_times > DIFFERENT_TIME_THRESHOLD) {
                                             this.synch = true;
-                                            mode = 1f;
+                                            mode = "Synchronized";
                                         }
                                     }
                                 } else {
@@ -142,12 +149,12 @@ public class PocFragment extends Fragment {
                                         preamble.add(0);
                                         if (preamble.size() >= PREAMBLE_SIZE) {
                                             this.input_mode = true;
-                                            mode = 2f;
+                                            mode = "Preamble received";
                                         }
                                     }
                                 }
-                                Log.d("SINK", "i " + current_bit);
-                                Log.d("SINK", "" + (System.currentTimeMillis() - start));
+//                                Log.d("SINK4", "i " + current_bit);
+//                                Log.d("SINK5", "" + (System.currentTimeMillis() - start));
 
                                 // message
                                 if (this.input_mode) {
@@ -156,8 +163,8 @@ public class PocFragment extends Fragment {
                                         int dec = 0;
                                         for (int i = 0; i < 8; i++)
                                             dec += (this.word[i] == 1) ? Math.pow(2, 8-(i+1)) : 0;
-                                        Log.d("SINK", "Message " + Arrays.toString(this.word));
-                                        publishProgress((float)dec, threshold, WAIT_START, workload_average, workload_variance, sum, mode);
+                                        Log.d("SINK6", "Message " + Arrays.toString(this.word));
+                                        publishProgress(String.valueOf(dec), String.valueOf(threshold), String.valueOf(sum), mode, String.valueOf((System.currentTimeMillis() - p1)));
                                         this.word = new int[8];
                                         this.word_idx = 0;
                                     } else
@@ -165,7 +172,14 @@ public class PocFragment extends Fragment {
                                 }
 
                                 last_bit = current_bit;
-                                Log.d("SINK", "" + (System.currentTimeMillis() - start));
+
+                                if (this.iterations < 1) {
+                                    this.overhead = System.currentTimeMillis() - start;
+                                    this.iterations++;
+                                }
+
+//                                Log.d("SINK7", "" + (System.currentTimeMillis() - start));
+                                Log.d("SINK8", "Total " + (System.currentTimeMillis() - p1));
                             }
 
                             return null;
@@ -179,7 +193,6 @@ public class PocFragment extends Fragment {
                         @Override
                         protected void onPostExecute(Void v) {
                             super.onPostExecute(v);
-                            this.wait_variation = 0;
                             this.threshold = BIT_THRESHOLD_START;
                             this.synch = false;
                             this.input_mode = false;
@@ -188,36 +201,38 @@ public class PocFragment extends Fragment {
                             this.max_different_times = 0;
                             this.max_variation_different_times = 0;
                             this.word_idx = 0;
+                            this.iterations = 0;
                         }
 
                         @Override
-                        protected void onProgressUpdate(Float... values) {
+                        protected void onProgressUpdate(String... values) {
                             super.onProgressUpdate(values);
                             EditText editText3 = ll.findViewById(R.id.editText3);
                             TextView textView7 = ll.findViewById(R.id.textView7);
                             TextView textView8 = ll.findViewById(R.id.textView8);
                             TextView textView9 = ll.findViewById(R.id.textView9);
+                            TextView textView10 = ll.findViewById(R.id.textView10);
+                            String time = "";
 
-                            if (values[0] != null) {
-                                int value = Math.round(values[0]);
-                                editText3.append(String.valueOf(Character.toChars(value)[0]));
+                            if (!values[0].equals(""))
+                                editText3.append(String.valueOf(Character.toChars(Integer.parseInt(values[0]))[0]));
+
+                            textView7.setText("Last evaluated threshold: " + values[1]);
+
+                            textView8.setText("Last workload: " + values[2]);
+
+                            if (!values[4].equals("")) {
+                                time = values[4];
+                                textView10.setText("Time last iteration: " + time);
                             }
 
-                            textView7.setText("Last evaluated threshold: " + String.valueOf(values[1]));
-                            textView8.setText("Last evaluated time iteration: " + String.valueOf(values[2]) + "ms" +
-                                    "\nActual workload average: " + values[3] +
-                                    "\nActual workload variance: " + values[4] +
-                                    "\nLast workload: " + values[5]);
-
-                            if (values[6] == 0f) {
+                            textView9.setText(values[3]);
+                            if (values[3].equals("Not synchronized")) {
                                 textView9.setTextColor(Color.RED);
-                                textView9.setText("Not synchronized");
-                            } else if (values[6] == 1f) {
+                            } else if (values[3].equals("Synchronized")) {
                                 textView9.setTextColor(Color.BLUE);
-                                textView9.setText("Synchronized");
-                            } else if (values[6] == 2f) {
+                            } else if (values[3].equals("Preamble received")) {
                                 textView9.setTextColor(Color.GREEN);
-                                textView9.setText("Preamble received");
                             }
                         }
 

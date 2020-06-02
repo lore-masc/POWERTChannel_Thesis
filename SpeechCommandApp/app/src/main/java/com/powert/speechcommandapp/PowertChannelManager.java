@@ -24,35 +24,44 @@ public class PowertChannelManager {
     }
 
     private void sendStreamBits(int bits[]) {
-        long start, required;
+        long start, required, required_high;
 
         for(int i = 0; i < bits.length; i++) {
+            long p1 = System.currentTimeMillis();
             long timer = PowertChannelManager.TIME;
             if (bits[i] == 1) {
                 android.os.Process.setThreadPriority(Process.THREAD_PRIORITY_FOREGROUND);
 //                while (timer > 5) {
                     start = System.currentTimeMillis();
                     moduleForwarder.forward(ModuleForwarder.VERSION.HIGH);
-                    required = System.currentTimeMillis() - start;
-                    Log.d("POWERT-1", "times " + required);
-                if (PowertChannelManager.TIME - required > 1) {
-                    while (timer > 0) {
-                        start = System.currentTimeMillis();
+                    required_high = System.currentTimeMillis() - start;
+                    timer -= required_high;
+//                    Log.d("POWERT-1", "times " + required);
+                if (PowertChannelManager.TIME - required_high > 0) {
+                    while (System.currentTimeMillis() < p1 + PowertChannelManager.TIME) {
+//                        start = System.currentTimeMillis();
                         this.moduleForwarder.forward(ModuleForwarder.VERSION.LOW);
-                        required = System.currentTimeMillis() - start;
-                        timer -= required;
+//                        required = System.currentTimeMillis() - start;
+//                        Log.d("POWERT-0", "low time " + required);
+//                        timer -= required;
                     }
                 }
-                    timer -= required;
+//                    timer -= required;
 //                }
-                Log.d(i + "POWERT-1", "" + timer);
+//                Log.d(i + "POWERT-1", "High: " + required_high + " Lows: " + timer);
             } else {
                 android.os.Process.setThreadPriority(Process.THREAD_PRIORITY_FOREGROUND);
 
-                start = System.currentTimeMillis();
-                while(true)
-                    if (System.currentTimeMillis() - start >= PowertChannelManager.TIME)
-                        break;
+//                start = System.currentTimeMillis();
+//                while(true)
+//                    if (System.currentTimeMillis() - start >= PowertChannelManager.TIME)
+//                        break;
+                try {
+                    Thread.sleep(PowertChannelManager.TIME);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
 
 
 //                start = System.currentTimeMillis();
@@ -66,9 +75,10 @@ public class PowertChannelManager {
 //                        e.printStackTrace();
 //                    }
 //                }
-                Log.d(i + "POWERT-0", " " + (PowertChannelManager.TIME - (System.currentTimeMillis() - start)));
+//                Log.d(i + "POWERT-0", " " + (PowertChannelManager.TIME - (System.currentTimeMillis() - start)));
             }
 //          Log.d("POWERT", "Bit " + i + " sended.");
+            Log.d("POWERT", "Total time " + (System.currentTimeMillis() - p1));
         }
     }
 

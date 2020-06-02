@@ -5,6 +5,7 @@ import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -30,6 +31,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Arrays;
 import java.util.Random;
 
 public class DebugFragment extends Fragment {
@@ -197,8 +199,9 @@ public class DebugFragment extends Fragment {
                 for (int j = 0; j < unsqueezePowerToDb[i][0].length; j++)
                     mfccInput[i*unsqueezePowerToDb[i][0].length + j] = (float) unsqueezePowerToDb[i][0][j];
 
-//            Log.d(LOG_TAG, "MFCC Input======> " + Arrays.toString(mfccInput));
+            Log.d(LOG_TAG, "MFCC Input======> " + Arrays.toString(mfccInput));
 //            Log.d(LOG_TAG, "MFCC Input======> " + mfccInput.length);
+
             moduleForwarder.prepare(mfccInput);
             float[] scores = null;
 
@@ -262,7 +265,7 @@ public class DebugFragment extends Fragment {
                     }
                 }
 
-//            Log.d(LOG_TAG, "Output tensor======> " + Arrays.toString(scores));
+            Log.d(LOG_TAG, "Output tensor======> " + Arrays.toString(scores));
 
             float maxScore = -Float.MAX_VALUE;
             int maxScoreIdx = -1;
