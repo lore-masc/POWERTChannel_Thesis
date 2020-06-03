@@ -1,6 +1,6 @@
 # Speech Recognition CNN
 
-This Python script implements a double version of ResNet in order to use a different and notable amount of computable resources.
+This Python script implements different versions of convolutional neural networks (CNN) in order to use a different and notable amount of computable resources.
 
 The network will be able to classify, once trained, some vocal command classes. 
 
@@ -36,14 +36,14 @@ You can consult the helper with -h.
 python main.py -h
 ```
 
-Training with GPU for *light* version of the network and replace the model's weights after.
+Training with GPU for shufflenet model and replace the model's weights after.
 ```bash
-python main.py -d data/ -t -e 10 -b 128 -v low -g -s
+python main.py -m shufflenet -d data/ -t -e 10 -b 128 -g -s
 ```
 
 Prediction with GPU for the *.wav* input files.
 ```bash
-python main.py -d data/input/ -v low -g
+python main.py -m shufflenet -d data/input/ -g
 ```
 
 ## Export for mobile applications
@@ -52,14 +52,14 @@ You can export the actually trained weights into a PyTorch trace in order to use
 You have to specify an example of a tensor as input. You can also generate an example randomly.
 In this use case, a double version of the network exists, so it is possible to choose one of them. 
 ```bash
-python export_mobile_model.py -d data/input/recorded_audio.wav -v high
+python export_mobile_model.py -m shufflenet -d data/input/recorded_audio.wav
 ```
 
 In the end, you can find a *.pt* file containing the network trace. You can load it as a pre-trained Module into a mobile Application.
 
 In terms of efficiency and size, a quantized version of the network should be better. 
 ```bash
-python export_mobile_model.py -d data/input/recorded_audio.wav -v low -q
+python export_mobile_model.py -m shufflenet -d data/input/recorded_audio.wav -q
 ```
 
 ## Code details
@@ -98,7 +98,8 @@ Results:
 |Name 		|Params(M)	| FLOPs(G)|
 |--|--|--|
 |ResNet_18	| 11.18		| 1.69|
-|ResNext101_32x8d	| 86.76		| 15.84|
+|MobileNetV2	| 0.06		| 0.02|
+|ShufflenetV2 0.5x   | 0.35 | 0.04|
 
 ### How to store and to load trained weights
 If requested by input, the ``main.py`` script can save the trained weights in a indicate *.pth* file.
