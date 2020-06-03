@@ -20,4 +20,10 @@
     <string name="PoC">PoC</string>
     <string name="debug">Debug</string>
     <string name="listen">Listen</string>
+    <string name="mode0">Checking the channel. Takes some seconds…</string>
+    <string name="mode1">Covert channel busy. It is advisable to wait until the channel clears.</string>
+    <string name="mode2">You can send message. Alignment in progress…</string>
+    <string name="mode3">Not yet synchronized.</string>
+    <string name="mode4">Synchronized!</string>
+    <string name="mode5">Preamble received! Wait the message…</string>
 </resources>
