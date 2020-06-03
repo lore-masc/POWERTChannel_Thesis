@@ -23,6 +23,7 @@ public class Task extends AsyncTask<Void, String, Void> {
     private final int PREAMBLE_SIZE = 5;
     private final int DIFFERENT_TIME_THRESHOLD = 6;
     private final int THRESHOLD_WATCHER = 4;
+    private final float CHANNEL_FREE = 0.04f;
 
     @SuppressLint("StaticFieldLeak")
     LinearLayout ll;
@@ -64,15 +65,15 @@ public class Task extends AsyncTask<Void, String, Void> {
         // Check the channel
         float avarage_state;
         do {
-            avarage_state = 0;
+            this.workload_overhead = 0;
             for (int i = 0; i < 5; i++)
                 this.workload_overhead += Utils.readCore(Math.round(1000));
             avarage_state = this.workload_overhead / 10;
-            if (avarage_state > 0.02f) {
+            if (avarage_state > CHANNEL_FREE) {
                 mode = this.context.getResources().getString(R.string.mode1);
                 publishProgress("", "", String.valueOf(avarage_state), mode, "");
             }
-        } while (avarage_state > 0.02f && this.isRecording());
+        } while (avarage_state > CHANNEL_FREE && this.isRecording());
 
         mode = this.context.getResources().getString(R.string.mode2);
 

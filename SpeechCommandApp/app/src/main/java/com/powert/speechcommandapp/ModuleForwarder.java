@@ -13,8 +13,8 @@ import static com.powert.speechcommandapp.DebugFragment.assetFilePath;
 
 public class ModuleForwarder {
     public enum VERSION {LOW, HIGH};
-    private static final String LOW_MODEL = "mobile_mobilenet_2_quantized.pt";
-    private static final String HIGH_MODEL = "mobile_mobilenet_2.pt";
+    private static final String LOW_MODEL = "mobile_shufflenet_v2_05_quantized.pt";
+    private static final String HIGH_MODEL = "mobile_shufflenet_v2_05.pt";
     long[] shape = {1, 1, 40, 32};
     private Module module_low;
     private Module module_high;

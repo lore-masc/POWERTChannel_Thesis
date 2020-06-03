@@ -7,12 +7,13 @@ import os
 from pathlib import Path
 
 from thop import profile
+from torch import nn
 from torch.utils.data import DataLoader
 from torch.utils.data.sampler import WeightedRandomSampler
+from torchvision.models.quantization import shufflenet_v2_x0_5, mobilenet_v2, resnet18
 from torchvision.transforms import Compose
 from tqdm import *
 
-from model.resnet import resnet18, resnext101_32x8d
 from speech_commands_dataset import *
 from transforms import *
 
@@ -23,8 +24,8 @@ Input arguments
     use_gpu: GPU where you want to train your network
 '''
 
-def get_data(batch_size, root, use_gpu=True):
 
+def get_data(batch_size, root, use_gpu=True):
     data_aug_transform = Compose([ChangeAmplitude(), ChangeSpeedAndPitchAudio(), FixAudioLength(), ToSTFT(),
                                   StretchAudioOnSTFT(), TimeshiftAudioOnSTFT(), FixSTFTDimension()])
     bg_dataset = BackgroundNoiseDataset(root + "train/_background_noise_", data_aug_transform)
@@ -52,16 +53,49 @@ def get_data(batch_size, root, use_gpu=True):
 
 '''
 Input arguments
-    version: String indicates the version of the network ['low', 'high']
+    model: String name of the model
+'''
+
+
+def get_model_weights(model):
+    model_path = 'model/'
+    if model == 'shufflenet':
+        model_path = 'model/weights_shufflenet_v2_05.pth'
+    elif model == 'mobilenet':
+        model_path = 'model/weights_mobilenet_v2.pth'
+    elif model == 'resnet':
+        model_path = 'model/weights_resnet_18.pth'
+    return model_path
+
+
+'''
+Input arguments
     model_path: String path of the loaded model
 '''
 
 
-def initialize_net(version='low', model_path=''):
-    if version == 'low':
+def prepare_model(model):
+    if model == 'shufflenet':
+        net = shufflenet_v2_x0_5(num_classes=len(CLASSES), quantize=False)
+        net.conv1[0] = nn.Conv2d(1, 24, 3, 2, 1, bias=False)
+    elif model == 'mobilenet':
+        net = mobilenet_v2(num_classes=len(CLASSES), quantize=False, width_mult=0.03125)
+        net.features[0][0] = nn.Conv2d(1, 8, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
+    elif model == 'resnet':
         net = resnet18(num_classes=len(CLASSES), quantize=False)
-    else:
-        net = resnext101_32x8d(num_classes=len(CLASSES), quantize=False)
+        net.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
+    return net
+
+
+'''
+Input arguments
+    model_path: String path of the loaded model
+'''
+
+
+def initialize_net(model):
+    net = prepare_model(model=model)
+    model_path = get_model_weights(model=model)
 
     if Path(model_path).exists():
         state_dict = torch.load(model_path)
@@ -142,7 +176,7 @@ def train(net, data_loader, optimizer, cost_function, device='cuda:0'):
         # Free cuda memory
         torch.cuda.empty_cache()
 
-    return cumulative_loss/samples, cumulative_accuracy/samples*100
+    return cumulative_loss / samples, cumulative_accuracy / samples * 100
 
 
 '''
@@ -192,7 +226,7 @@ def test(net, data_loader, cost_function, device='cuda:0', num_batches=0):
             if 0 < num_batches <= done_batches:
                 return cumulative_loss / samples, cumulative_accuracy / samples * 100
 
-    return cumulative_loss/samples, cumulative_accuracy/samples*100
+    return cumulative_loss / samples, cumulative_accuracy / samples * 100
 
 
 '''
@@ -241,33 +275,26 @@ Input arguments
     root: The root folder of audio
     save: Boolean value for overwrite the trained model
     perform_training: Boolean value to perform the training process 
-    version: High or Low version of the network
 '''
 
 
-def main(batch_size=128, 
+def main(batch_size=128,
          use_gpu=True,
-         learning_rate=0.001, 
-         weight_decay=0.000001, 
-         momentum=0.9, 
+         model='shufflenet',
+         learning_rate=0.001,
+         weight_decay=0.000001,
+         momentum=0.9,
          epochs=50,
          root="data/",
          save=True,
-         perform_training=True,
-         version='low'):
-
+         perform_training=True):
     if use_gpu:
         device = 'cuda:0'
         torch.cuda.empty_cache()
     else:
         device = 'cpu'
 
-    if version == 'low':
-        model_path = 'model/weights_rn_18.pth'
-    elif version == 'high':
-        model_path = 'model/weights_rn_101.pth'
-
-    net = initialize_net(version=version, model_path=model_path).to(device)
+    net = initialize_net(model=model).to(device)
 
     # Op Counter
     dsize = (32, 1, 40, 32)
@@ -310,7 +337,7 @@ def main(batch_size=128,
         for e in range(epochs):
             train_loss, train_accuracy = train(net, train_loader, optimizer, cost_function, device)
             test_loss, test_accuracy = test(net, test_loader, cost_function, device)
-            print('\n\t\tEpoch: {:d}'.format(e+1))
+            print('\n\t\tEpoch: {:d}'.format(e + 1))
             print('\t\t\t{"Training loss": %.5f, "Training accuracy": %.2f},' % (train_loss, train_accuracy))
             print('\t\t\t{"Test loss": %.5f, "Test accuracy": %.2f},' % (test_loss, test_accuracy))
             # print('-----------------------------------------------------')
@@ -323,6 +350,7 @@ def main(batch_size=128,
             # saving model
             if save:
                 print("Saving weights")
+                model_path = get_model_weights(model=model)
                 torch.save(net.state_dict(), model_path)
 
         train_loss, train_accuracy = test(net, train_loader, cost_function, device)
@@ -341,8 +369,9 @@ if __name__ == '__main__':
                         choices=['data/', 'data/input/'],
                         help='Write the dataset relative path only if you have to perform training; '
                              'Specify the inputs folder otherwise.')
-    parser.add_argument('-v', '--version', action='store', dest='version', required=True, choices=['low', 'high'],
-                        help='High needs intensive computational resources; Low is a more light version.')
+    parser.add_argument('-m', '--model', action='store', dest='model', required=True,
+                        choices=['shufflenet', 'mobilenet', 'resnet'],
+                        help='True if you want perform quantization conversion.')
     parser.add_argument('-e', '--epochs', action='store', dest='epochs', type=int,
                         help='Specify the number of epochs to run during the train.', default=10)
     parser.add_argument('-b', '--batch', action='store', dest='batch_size', type=int, default=32,
@@ -356,5 +385,6 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    main(root=args.dataset, epochs=args.epochs, batch_size=args.batch_size, perform_training=args.training,
-         save=args.save, use_gpu=args.gpu, version=args.version)
+    main(root=args.dataset, model=args.model, epochs=args.epochs, batch_size=args.batch_size,
+         perform_training=args.training,
+         save=args.save, use_gpu=args.gpu)
