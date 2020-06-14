@@ -116,7 +116,7 @@ def export_model(model, input_path, quantize=False):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Detect speech command by neural network DenseNet')
+    parser = argparse.ArgumentParser(description='Export model in quantized and not quantized traced.')
     parser.add_argument('-d', '--data', action='store', dest='data', required=True,
                         help='Specify the input path to use with example for the net trace.')
     parser.add_argument('-q', '--quantize', action='store_true', dest='quantize', default=False,

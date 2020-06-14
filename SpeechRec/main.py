@@ -364,7 +364,7 @@ def main(batch_size=128,
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Detect speech command by neural network DenseNet')
+    parser = argparse.ArgumentParser(description='Detect speech command by neural network')
     parser.add_argument('-d', '--dataset', action='store', dest='dataset', default='data/',
                         choices=['data/', 'data/input/'],
                         help='Write the dataset relative path only if you have to perform training; '

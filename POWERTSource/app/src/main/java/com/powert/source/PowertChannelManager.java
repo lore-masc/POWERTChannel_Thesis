@@ -11,7 +11,7 @@ import java.util.Random;
 public class PowertChannelManager {
     private LinearLayout ll;
     private ModuleForwarder moduleForwarder;
-    public static final int LONG_STREAM_SIZE = 30;
+    public static final int LONG_STREAM_SIZE = 50;
     public static final int PREAMBLE_SIZE = 5;
     public static long TIME = 500;                   // [ms]
 
@@ -39,7 +39,7 @@ public class PowertChannelManager {
                     moduleForwarder.forward(ModuleForwarder.VERSION.HIGH);
                     required_high = System.currentTimeMillis() - start;
                     timer -= required_high;
-//                    Log.d("POWERT-1", "times " + required);
+                    Log.d("POWERT-1", "times " + required_high);
                 if (PowertChannelManager.TIME - required_high > 0) {
                     while (System.currentTimeMillis() < p1 + PowertChannelManager.TIME) {
 //                        start = System.currentTimeMillis();
@@ -53,27 +53,16 @@ public class PowertChannelManager {
 //                }
 //                Log.d(i + "POWERT-1", "High: " + required_high + " Lows: " + timer);
             } else {
-//                start = System.currentTimeMillis();
-//                this.moduleForwarder.forward(ModuleForwarder.VERSION.LOW);
-//                required = System.currentTimeMillis() - start;
+                start = System.currentTimeMillis();
+                this.moduleForwarder.forward(ModuleForwarder.VERSION.LOW);
+                required = System.currentTimeMillis() - start;
 
                 try {
-                    Thread.sleep(PowertChannelManager.TIME /*- required*/);
+                    Thread.sleep(PowertChannelManager.TIME - required);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
 
-//                start = System.currentTimeMillis();
-//                this.moduleForwarder.forward(ModuleForwarder.VERSION.LOW);
-//                required = System.currentTimeMillis() - start;
-
-//                if (PowertChannelManager.TIME - 10 - required > 0) {
-//                    try {
-//                        Thread.sleep(PowertChannelManager.TIME - required - 2);
-//                    } catch (InterruptedException e) {
-//                        e.printStackTrace();
-//                    }
-//                }
 //                Log.d(i + "POWERT-0", " " + (PowertChannelManager.TIME - (System.currentTimeMillis() - start)));
             }
             Log.d("POWERT", "Bit " + i + " sended. It's a " + bits[i] + ". Total time " + (System.currentTimeMillis() - p1));

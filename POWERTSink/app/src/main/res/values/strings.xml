@@ -27,4 +27,5 @@
     <string name="mode3">Not yet synchronized.</string>
     <string name="mode4">Synchronized!</string>
     <string name="mode5">Preamble received! Wait the message…</string>
+    <string name="startwait">300</string>
 </resources>

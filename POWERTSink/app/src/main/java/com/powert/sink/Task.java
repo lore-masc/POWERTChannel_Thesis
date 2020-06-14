@@ -23,7 +23,7 @@ public class Task extends AsyncTask<Void, String, Void> {
     private final int PREAMBLE_SIZE = 5;
     private final int DIFFERENT_TIME_THRESHOLD = 6;
     private final int THRESHOLD_WATCHER = 4;
-    private final float CHANNEL_FREE = 0.04f;
+    private final float CHANNEL_FREE = 0.1f;
 
     @SuppressLint("StaticFieldLeak")
     LinearLayout ll;
