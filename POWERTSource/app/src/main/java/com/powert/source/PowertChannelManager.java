@@ -11,7 +11,7 @@ import java.util.Random;
 public class PowertChannelManager {
     private LinearLayout ll;
     private ModuleForwarder moduleForwarder;
-    public static final int LONG_STREAM_SIZE = 50;
+    public static final int LONG_STREAM_SIZE = 40;
     public static final int PREAMBLE_SIZE = 5;
     public static long TIME = 500;                   // [ms]
 
@@ -27,43 +27,20 @@ public class PowertChannelManager {
     }
 
     private void sendStreamBits(int bits[]) {
-        long start, required, required_high;
         android.os.Process.setThreadPriority(Process.THREAD_PRIORITY_FOREGROUND);
         for(int i = 0; i < bits.length; i++) {
             long p1 = System.currentTimeMillis();
-            long timer = PowertChannelManager.TIME;
 
             if (bits[i] == 1) {
-//                while (timer > 5) {
-                    start = System.currentTimeMillis();
-                    moduleForwarder.forward(ModuleForwarder.VERSION.HIGH);
-                    required_high = System.currentTimeMillis() - start;
-                    timer -= required_high;
-                    Log.d("POWERT-1", "times " + required_high);
-                if (PowertChannelManager.TIME - required_high > 0) {
-                    while (System.currentTimeMillis() < p1 + PowertChannelManager.TIME) {
-//                        start = System.currentTimeMillis();
+                    while (System.currentTimeMillis() < p1 + PowertChannelManager.TIME)
                         this.moduleForwarder.forward(ModuleForwarder.VERSION.LOW);
-//                        required = System.currentTimeMillis() - start;
-//                        Log.d("POWERT-0", "low time " + required);
-//                        timer -= required;
-                    }
-                }
-//                    timer -= required;
-//                }
 //                Log.d(i + "POWERT-1", "High: " + required_high + " Lows: " + timer);
             } else {
-                start = System.currentTimeMillis();
-                this.moduleForwarder.forward(ModuleForwarder.VERSION.LOW);
-                required = System.currentTimeMillis() - start;
-
                 try {
-                    Thread.sleep(PowertChannelManager.TIME - required);
+                    Thread.sleep(PowertChannelManager.TIME);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-
-//                Log.d(i + "POWERT-0", " " + (PowertChannelManager.TIME - (System.currentTimeMillis() - start)));
             }
             Log.d("POWERT", "Bit " + i + " sended. It's a " + bits[i] + ". Total time " + (System.currentTimeMillis() - p1));
         }

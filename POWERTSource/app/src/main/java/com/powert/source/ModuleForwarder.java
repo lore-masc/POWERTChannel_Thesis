@@ -1,7 +1,6 @@
 package com.powert.source;
 
 import android.content.Context;
-import android.os.AsyncTask;
 
 import org.pytorch.IValue;
 import org.pytorch.Module;

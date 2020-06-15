@@ -25,7 +25,7 @@ public class Utils {
     }
 
     //for multi core value
-    static float readCore(int wait) {
+    static float readCore(long wait) {
         /*
          * how to calculate multicore
          * this function reads the bytes from a logging file in the android system (/proc/stat for cpu values)
