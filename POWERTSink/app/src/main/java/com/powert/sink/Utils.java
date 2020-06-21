@@ -12,8 +12,8 @@ public class Utils {
 
     static String get_param(String path) throws IOException {
         ProcessBuilder cmd;
-        String[] cpu0 = {"/system/bin/cat", path};
-        cmd = new ProcessBuilder(cpu0);
+        String[] command = {"/system/bin/cat", path};
+        cmd = new ProcessBuilder(command);
         Process process = cmd.start();
 
         BufferedReader bufferedReader = new BufferedReader(

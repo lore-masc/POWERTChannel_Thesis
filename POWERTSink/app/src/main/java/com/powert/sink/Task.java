@@ -78,7 +78,7 @@ public class Task extends AsyncTask<Void, String, Void> {
                     start = false;
                     start_range = System.currentTimeMillis();
                 }
-            } while (start && sampled_workload < PEAK);
+            } while (start && this.isRecording());
             samples.add(sampled_workload);
 
             long last_measure = System.currentTimeMillis();
@@ -127,8 +127,8 @@ public class Task extends AsyncTask<Void, String, Void> {
                     // corner case of remaining zero-bits
                     for (int i = 0; i < BYTE - bits.size(); i++)  bits.add(0);
                 }
-
             }
+
         }
 
         return null;
