@@ -1,0 +1,27 @@
+<resources>
+    <string name="app_name">POWERT Sink1</string>
+    <string name="start">Start</string>
+    <string name="stop">Stop</string>
+    <string name="data_message">Data are stored in</string>
+    <string name="delay">Delay: </string>
+    <string name="wait">Wait for: </string>
+    <string name="ms">ms</string>
+    <string name="milliseconds">milliseconds</string>
+    <string name="zero">0</string>
+    <string name="default_wait">15</string>
+    <string name="overhead">Overhead required:</string>
+    <string name="frequencies">CPU frequencies</string>
+    <string name="loads">CPU loads</string>
+    <string name="cpu_temp">CPU temperature</string>
+    <string name="threads">Running threads</string>
+    <string name="ram">Memory occupied</string>
+    <string name="battery_temp">Battery temperature</string>
+    <string name="battery_power">Battery voltage</string>
+    <string name="PoC">PoC</string>
+    <string name="debug">Debug</string>
+    <string name="listen">Listen</string>
+    <string name="time">Time for a bit </string>
+    <string name="mode1">Synchronization...</string>
+    <string name="mode2">Preamble received! Wait the message…</string>
+    <string name="startwait">200</string>
+</resources>

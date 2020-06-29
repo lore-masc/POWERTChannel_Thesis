@@ -142,6 +142,7 @@ public class Task extends AsyncTask<Void, Integer, Void> {
                 bits.clear();
                 synchronization = false;
                 message = true;
+                bit_threshold = simpleRegression.predict(timestamps.get(points.get(i - PREAMBLE_SIZE)));
             }
 
             if (pointValue < bit_threshold) {
