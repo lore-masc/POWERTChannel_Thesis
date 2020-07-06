@@ -1,4 +1,4 @@
-# Sink1 Android App
+# Sink2 Android App
 
 ## Direct download
 You can download apk file [here](https://drive.google.com/file/d/1HgLtTNjgqLGXvzI6K4-nLTA_qXaLllqe/view?usp=sharing).
