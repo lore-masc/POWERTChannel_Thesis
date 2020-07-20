@@ -1,5 +1,5 @@
 import argparse
-from difflib import SequenceMatcher
+import jellyfish
 
 
 def main():
@@ -13,8 +13,8 @@ def main():
 
     text1 = open(args.f1).read()
     text2 = open(args.f2).read()
-    m = SequenceMatcher(None, text1, text2)
-    print(m.ratio())
+    ratio = jellyfish.jaro_distance(text1, text2)
+    print(round(ratio, 2))
 
 
 if __name__ == '__main__':

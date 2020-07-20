@@ -6,18 +6,26 @@ import android.util.Log;
 import android.widget.LinearLayout;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Random;
 
 public class PowertChannelManager {
     private LinearLayout ll;
     private ModuleForwarder moduleForwarder;
+    private boolean manchester;
     public static final int LONG_STREAM_SIZE = 40;
     public static final int PREAMBLE_SIZE = 5;
     public static long TIME = 500;                   // [ms]
+    ArrayList<Long> logTimestamps;
+    ArrayList<Integer> logBits;
 
     PowertChannelManager(LinearLayout ll, Context context) throws IOException {
         this.ll = ll;
         this.moduleForwarder = new ModuleForwarder(context);
+        this.manchester = false;
+        this.logTimestamps = new ArrayList<>();
+        this.logBits = new ArrayList<>();
+
         float[] input = new float[40 * 32];
 
         Random random = new Random();
@@ -26,23 +34,50 @@ public class PowertChannelManager {
         this.moduleForwarder.prepare(input);
     }
 
+    /**
+     * Send a single zero bit.
+     */
+    private void sendBit0() {
+        this.logTimestamps.add(System.currentTimeMillis());
+        this.logBits.add(0);
+        try {
+            Thread.sleep(PowertChannelManager.TIME);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Send a single one bit.
+     */
+    private void sendBit1() {
+        this.logTimestamps.add(System.currentTimeMillis());
+        this.logBits.add(1);
+        long p1 = System.currentTimeMillis();
+        while (System.currentTimeMillis() < p1 + PowertChannelManager.TIME) {
+//            long start = System.currentTimeMillis();
+            this.moduleForwarder.forward(ModuleForwarder.VERSION.LOW);
+//                    Log.d(i + "POWERT-1", "Low: " + (System.currentTimeMillis() - start));
+        }
+    }
+
+    /**
+     * Send an array of bits using powert channel.
+     * @param bits array of 1 or 0 integers.
+     */
     private void sendStreamBits(int bits[]) {
         android.os.Process.setThreadPriority(Process.THREAD_PRIORITY_FOREGROUND);
+
         for(int i = 0; i < bits.length; i++) {
             long p1 = System.currentTimeMillis();
-
             if (bits[i] == 1) {
-                while (System.currentTimeMillis() < p1 + PowertChannelManager.TIME) {
-                    long start = System.currentTimeMillis();
-                    this.moduleForwarder.forward(ModuleForwarder.VERSION.LOW);
-//                    Log.d(i + "POWERT-1", "Low: " + (System.currentTimeMillis() - start));
-                }
+                this.sendBit1();
+                if (this.usingManchesterEncoding())
+                    this.sendBit0();
             } else {
-                try {
-                    Thread.sleep(PowertChannelManager.TIME);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+                this.sendBit0();
+                if (this.usingManchesterEncoding())
+                    this.sendBit1();
             }
             Log.d("POWERT", "Bit " + i + " sended. It's a " + bits[i] + ". Total time " + (System.currentTimeMillis() - p1));
         }
@@ -71,6 +106,22 @@ public class PowertChannelManager {
     }
 
     /**
+     * Check if Manchester encoding is enabled.
+     * @return True if it is enabled.
+     */
+    private boolean usingManchesterEncoding() {
+        return this.manchester;
+    }
+
+    /**
+     * Set manchester encoding doubling the sending time.
+     * @param enable true if Manchester encoding is enabled.
+     */
+    void useManchesterEncoding (boolean enable) {
+        this.manchester = enable;
+    }
+
+    /**
      * Send a message converting the passed string into a binary encode.
      * The package will be composed with a long bit stream and a short preamble.
      * @param message String of message to send.
@@ -80,6 +131,7 @@ public class PowertChannelManager {
         this.sendLongStream();
         this.sendPreamble();
         this.sendStreamBits(bits);
+        return;
     }
 
     /**

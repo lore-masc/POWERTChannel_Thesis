@@ -9,8 +9,10 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -22,6 +24,7 @@ import java.io.IOException;
 import java.util.Random;
 
 public class PocFragment extends Fragment {
+    LinearLayout ll;
     public PocFragment () {
 
     }
@@ -30,7 +33,7 @@ public class PocFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        final LinearLayout ll = (LinearLayout) inflater.inflate(R.layout.poc_fragment, container, false);
+        this.ll = (LinearLayout) inflater.inflate(R.layout.poc_fragment, container, false);
 
         try {
             final PowertChannelManager powertChannelManager = new PowertChannelManager(ll, getContext());
@@ -42,6 +45,7 @@ public class PocFragment extends Fragment {
                     final Button button = ll.findViewById(R.id.button);
                     final Button button2 = ll.findViewById(R.id.button2);
                     final Editable editText5_editable = editText5.getText();
+                    final Switch switch1 = ll.findViewById(R.id.switch1);
 
                     @SuppressLint("StaticFieldLeak")
                     AsyncTask<Void, Integer, Void> task = new AsyncTask<Void, Integer, Void>() {
@@ -51,6 +55,7 @@ public class PocFragment extends Fragment {
                             editText5.setEnabled(false);
                             button.setEnabled(false);
                             button2.setEnabled(false);
+                            powertChannelManager.useManchesterEncoding(switch1.isChecked());
                         }
 
                         @Override
@@ -98,22 +103,8 @@ public class PocFragment extends Fragment {
 
             @Override
             public void afterTextChanged(Editable s) {
-                EditText editText5 = ll.findViewById(R.id.editText5);
-                TextView textView8 = ll.findViewById(R.id.textView8);
-
-                String time = ((EditText) ll.findViewById(R.id.editTextNumber)).getText().toString();
-
-                if (!time.equals(""))
-                    PowertChannelManager.TIME = Long.parseLong(time);
-
-                int bits = PowertChannelManager.getBitArray(editText5.getText().toString()).length;
-
-                long time_required =
-                        PowertChannelManager.LONG_STREAM_SIZE*PowertChannelManager.TIME
-                                + PowertChannelManager.PREAMBLE_SIZE*PowertChannelManager.TIME
-                                + bits*PowertChannelManager.TIME;
-
-                textView8.setText("Estimated time: " + time_required + " ms");
+                final Switch switch1 = ll.findViewById(R.id.switch1);
+                updateRequiredTime(switch1.isChecked());
             }
         };
 
@@ -123,6 +114,34 @@ public class PocFragment extends Fragment {
         final EditText editTextNumber = ll.findViewById(R.id.editTextNumber);
         editTextNumber.addTextChangedListener(textWatcher);
 
+        final Switch switch1 = ll.findViewById(R.id.switch1);
+        switch1.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                updateRequiredTime(isChecked);
+            }
+        });
+
         return ll;
+    }
+
+    void updateRequiredTime(boolean isChecked) {
+        EditText editText5 = ll.findViewById(R.id.editText5);
+        TextView textView8 = ll.findViewById(R.id.textView8);
+        String time = ((EditText) ll.findViewById(R.id.editTextNumber)).getText().toString();
+
+        if (!time.equals(""))
+            PowertChannelManager.TIME = Long.parseLong(time);
+
+        int bits = PowertChannelManager.getBitArray(editText5.getText().toString()).length;
+
+        long time_required =
+                PowertChannelManager.LONG_STREAM_SIZE*PowertChannelManager.TIME
+                        + PowertChannelManager.PREAMBLE_SIZE*PowertChannelManager.TIME
+                        + bits*PowertChannelManager.TIME;
+
+        if (isChecked)    time_required *= 2;
+
+        textView8.setText("Estimated time: " + time_required + " ms");
     }
 }

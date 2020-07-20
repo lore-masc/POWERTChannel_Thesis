@@ -11,6 +11,7 @@ import java.util.Random;
 public class PowertChannelManager {
     private LinearLayout ll;
     private ModuleForwarder moduleForwarder;
+    private boolean manchester;
     public static final int LONG_STREAM_SIZE = 40;
     public static final int PREAMBLE_SIZE = 5;
     public static long TIME = 500;                   // [ms]
@@ -19,6 +20,7 @@ public class PowertChannelManager {
     PowertChannelManager(LinearLayout ll, Context context) throws IOException {
         this.ll = ll;
         this.moduleForwarder = new ModuleForwarder(context);
+        this.manchester = false;
         float[] input = new float[40 * 32];
 
         Random random = new Random();
@@ -27,37 +29,59 @@ public class PowertChannelManager {
         this.moduleForwarder.prepare(input);
     }
 
+    /**
+     * Send a single zero bit.
+     */
+    private void sendBit0() {
+        long p1 = System.currentTimeMillis();
+        for (int c = 0; c < count && System.currentTimeMillis() < p1 + PowertChannelManager.TIME; c++) {
+            long start = System.currentTimeMillis();
+            this.moduleForwarder.forward(ModuleForwarder.VERSION.LOW);
+//                    Log.d(i + "POWERT-1", "Low: " + (System.currentTimeMillis() - start));
+        }
+
+        long p2 = PowertChannelManager.TIME - (System.currentTimeMillis() - p1);
+        Log.d("POWERT", "Sleep time: " + p2);
+        if (p2 > 0) {
+            try {
+                Thread.sleep(p2);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    /**
+     * Send a single one bit.
+     */
+    private void sendBit1() {
+        long p1 = System.currentTimeMillis();
+        count = 0;
+        while (System.currentTimeMillis() < p1 + PowertChannelManager.TIME) {
+            long start = System.currentTimeMillis();
+            this.moduleForwarder.forward(ModuleForwarder.VERSION.HIGH);
+//                    Log.d(i + "POWERT-1", "High: " + (System.currentTimeMillis() - start));
+            count++;
+        }
+    }
+
+    /**
+     * Send an array of bits using powert channel.
+     * @param bits array of 1 or 0 integers.
+     */
     private void sendStreamBits(int bits[]) {
         android.os.Process.setThreadPriority(Process.THREAD_PRIORITY_FOREGROUND);
         for(int i = 0; i < bits.length; i++) {
-            long p1 = System.currentTimeMillis();
-
             if (bits[i] == 1) {
-                count = 0;
-                while (System.currentTimeMillis() < p1 + PowertChannelManager.TIME) {
-                    long start = System.currentTimeMillis();
-                    this.moduleForwarder.forward(ModuleForwarder.VERSION.HIGH);
-//                    Log.d(i + "POWERT-1", "High: " + (System.currentTimeMillis() - start));
-                    count++;
-                }
+                this.sendBit1();
+                if (this.usingManchesterEncoding())
+                    this.sendBit0();
             } else {
-                for (int c = 0; c < count && System.currentTimeMillis() < p1 + PowertChannelManager.TIME; c++) {
-                    long start = System.currentTimeMillis();
-                    this.moduleForwarder.forward(ModuleForwarder.VERSION.LOW);
-//                    Log.d(i + "POWERT-1", "Low: " + (System.currentTimeMillis() - start));
-                }
-
-                long p2 = PowertChannelManager.TIME - (System.currentTimeMillis() - p1);
-                Log.d("POWERT", "Sleep time: " + p2);
-                if (p2 > 0) {
-                    try {
-                        Thread.sleep(p2);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
+                this.sendBit0();
+                if (this.usingManchesterEncoding())
+                    this.sendBit1();
             }
-            Log.d("POWERT", "Bit " + i + " sended. It's a " + bits[i] + ". Total time " + (System.currentTimeMillis() - p1) + " - Count: " + count);
+//            Log.d("POWERT", "Bit " + i + " sended. It's a " + bits[i] + ". Total time " + (System.currentTimeMillis() - p1) + " - Count: " + count);
         }
     }
 
@@ -93,6 +117,22 @@ public class PowertChannelManager {
         this.sendLongStream();
         this.sendPreamble();
         this.sendStreamBits(bits);
+    }
+
+    /**
+     * Check if Manchester encoding is enabled.
+     * @return True if it is enabled.
+     */
+    private boolean usingManchesterEncoding() {
+        return this.manchester;
+    }
+
+    /**
+     * Set manchester encoding doubling the sending time.
+     * @param enable true if Manchester encoding is enabled.
+     */
+    void useManchesterEncoding (boolean enable) {
+        this.manchester = enable;
     }
 
     /**

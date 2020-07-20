@@ -23,5 +23,6 @@
     <string name="time">Time for a bit </string>
     <string name="mode1">Synchronization...</string>
     <string name="mode2">Preamble received! Wait the message…</string>
-    <string name="startwait">200</string>
+    <string name="startwait">100</string>
+    <string name="manchester">Manchester encoding </string>
 </resources>

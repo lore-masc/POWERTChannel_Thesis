@@ -28,4 +28,5 @@
     <string name="random">Random</string>
     <string name="time">Time for a bit </string>
     <string name="startwait">100</string>
+    <string name="manchester">Manchester encoding </string>
 </resources>
