@@ -21,6 +21,7 @@ public class Task extends AsyncTask<Void, String, Void> {
     private static final float PEAK = 0.8f;
     private static final int BYTE = 8;
     private static final int PREAMBLE_SIZE = 5;
+    private static final int MAN_AVERAGE_WIN = 3;
     private static float overhead_workload;
     private static int average_size;
     private boolean manchester;
@@ -72,6 +73,8 @@ public class Task extends AsyncTask<Void, String, Void> {
             ArrayList<Long> logTimestamps = new ArrayList<>();
             ArrayList<Float> logSamples = new ArrayList<>();
             ArrayList<Integer> logBits = new ArrayList<>();
+            ArrayList<Float> averages = new ArrayList<>();
+
             long last_measure = 0;
             int count = 0;
 
@@ -90,51 +93,55 @@ public class Task extends AsyncTask<Void, String, Void> {
 
                 samples.add(sampled_workload);
 
-                if (samples.size() > 2) {
+                if (samples.size() > MAN_AVERAGE_WIN) {
                     samples.remove(0);
-//                    float actual_av = arithmeticAverageArray(samples);
-                    float actual_diff = samples.get(samples.size()-1) - samples.get(0);
+                    float actual_av = weightedAverageArray(samples);
+                    float actual_diff = 0;
+                    averages.add(actual_av);
 
-                    long now = System.currentTimeMillis();
+                    if (averages.size() > 2) {
+                        averages.remove(0);
+                        actual_diff = averages.get(1) - averages.get(0);
 
-                    logTimestamps.add(now);
-                    logSamples.add(sampled_workload);
+                        long now = System.currentTimeMillis();
 
-                    float percent_time = (now - last_measure) / (2.0f*wait);
-                    if (percent_time >= 0.85f) {
-//                        Log.d("SINK", "Time: " + (now - last_measure) / (2.0*wait) + " - Diff: " + actual_diff + " - " +  Math.abs(actual_diff) + " >= " + bit_threshold + "? " + (Math.abs(actual_diff) >= bit_threshold) + " *");
-                        if (Math.abs(actual_diff) >= bit_threshold)
-                            Log.d("SINK", "Time: " + (now - last_measure) / (2.0*wait) + " - Diff: " + actual_diff + " **");
+                        logTimestamps.add(now);
+                        logSamples.add(sampled_workload);
 
-                        if (now > 1.3f && logSamples.size() > 3) {
-                            actual_diff = logSamples.get(logSamples.size()-2) - logSamples.get(logSamples.size()-3);
-                        }
+                        float percent_time = (now - last_measure) / (2.0f * wait);
+                        if (percent_time >= 0.85f) {
+    //                        Log.d("SINK", "Time: " + (now - last_measure) / (2.0*wait) + " - Diff: " + actual_diff + " - " +  Math.abs(actual_diff) + " >= " + bit_threshold + "? " + (Math.abs(actual_diff) >= bit_threshold) + " *");
+                            if (Math.abs(actual_diff) >= bit_threshold)
+                                Log.d("SINK", "Time: " + (now - last_measure) / (2.0 * wait) + " - Diff: " + actual_diff + " **");
+                            else
+                                Log.d("SINK", "Time: " + (now - last_measure) / (2.0 * wait) + " - Diff: " + actual_diff);
 
-                        if (actual_diff >= bit_threshold) {
-                            bits.add(0);
-                            logBits.add(0);
-                            last_measure = now;
-                            if (synchronization) {
-                                count++;
-                                if (count >= PREAMBLE_SIZE) {
-                                    bits.clear();
-                                    mode = this.context.getResources().getString(R.string.mode2);
-                                    synchronization = false;
+                            if (actual_diff >= bit_threshold) {
+                                bits.add(0);
+                                logBits.add(0);
+                                last_measure = now;
+                                if (synchronization) {
+                                    count++;
+                                    if (count >= PREAMBLE_SIZE) {
+                                        bits.clear();
+                                        mode = this.context.getResources().getString(R.string.mode2);
+                                        synchronization = false;
+                                    }
                                 }
-                            }
-                        } else if (actual_diff <= -bit_threshold) {
-                            bits.add(1);
-                            logBits.add(1);
-                            last_measure = now;
-                            if (synchronization) {
-                                count = 0;
+                            } else if (actual_diff <= -bit_threshold) {
+                                bits.add(1);
+                                logBits.add(1);
+                                last_measure = now;
+                                if (synchronization) {
+                                    count = 0;
+                                }
+                            } else {
+                                logBits.add(-1);
                             }
                         } else {
                             logBits.add(-1);
+                            Log.d("SINK", "Time: " + (now - last_measure) / (2.0 * wait) + " - Diff: " + actual_diff);
                         }
-                    } else {
-                        logBits.add(-1);
-                        Log.d("SINK", "Time: " + (now - last_measure) / (2.0 * wait) + " - Diff: " + actual_diff);
                     }
 
                     // get message
@@ -265,7 +272,7 @@ public class Task extends AsyncTask<Void, String, Void> {
 
     void useManchesterEncoding (boolean enable) {
         this.manchester = enable;
-        this.bit_threshold = (this.usingManchesterEncoding()) ? 0.3f : 0.46f;
+        this.bit_threshold = (this.usingManchesterEncoding()) ? 0.2f : 0.46f;
     }
 
     private static float weightedAverageArray(ArrayList<Float> arr) {
@@ -276,22 +283,6 @@ public class Task extends AsyncTask<Void, String, Void> {
             sum += arr.get(i) * (i+1);
         }
         return  sum / w;
-    }
-
-    private static float arithmeticAverageArray(ArrayList<Float> arr) {
-        float sum = 0.0f;
-        for(int i = 0; i < arr.size(); i++) {
-            sum += arr.get(i);
-        }
-        return  sum / arr.size();
-    }
-
-    public static float stdDev(ArrayList<Float> arr) {
-        float m = arithmeticAverageArray(arr);
-        float sommaScartiQuad = 0;
-        for(int i = 0; i < arr.size(); i++)
-            sommaScartiQuad += (arr.get(i) -m);
-        return sommaScartiQuad/arr.size();
     }
 
     private int binaryToDec() {

@@ -79,7 +79,7 @@ public class PowertChannelManager {
                 if (this.usingManchesterEncoding())
                     this.sendBit1();
             }
-            Log.d("POWERT", "Bit " + i + " sended. It's a " + bits[i] + ". Total time " + (System.currentTimeMillis() - p1));
+            Log.d("POWERT", "Bit " + i + " sent. It's a " + bits[i] + ". Total time " + (System.currentTimeMillis() - p1));
         }
     }
 
