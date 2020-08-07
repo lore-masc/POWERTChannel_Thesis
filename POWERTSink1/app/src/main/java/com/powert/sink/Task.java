@@ -109,7 +109,7 @@ public class Task extends AsyncTask<Void, String, Void> {
                         logSamples.add(sampled_workload);
 
                         float percent_time = (now - last_measure) / (2.0f * wait);
-                        if (percent_time >= 0.85f) {
+                        if (percent_time >= 0.84f) {
     //                        Log.d("SINK", "Time: " + (now - last_measure) / (2.0*wait) + " - Diff: " + actual_diff + " - " +  Math.abs(actual_diff) + " >= " + bit_threshold + "? " + (Math.abs(actual_diff) >= bit_threshold) + " *");
                             if (Math.abs(actual_diff) >= bit_threshold)
                                 Log.d("SINK", "Time: " + (now - last_measure) / (2.0 * wait) + " - Diff: " + actual_diff + " **");
@@ -212,14 +212,13 @@ public class Task extends AsyncTask<Void, String, Void> {
                     }
 
                     // get message
-                    if (!synchronization && bits.size() >= BYTE) {
-                        // not working
-                        int dec = binaryToDec();
-                        publishProgress(mode, String.valueOf(actual_workload), String.valueOf(dec), "");
-                    } else if (!synchronization && Math.round((last_measure - start_range) / (wait * 1.0f)) > BYTE + (BYTE - bits.size())) {
-                        // corner case of remaining zero-bits
-                        for (int i = 0; i < BYTE - bits.size(); i++) bits.add(0);
-                    }
+                        if (!synchronization && bits.size() >= BYTE) {
+                            int dec = binaryToDec();
+                            publishProgress(mode, String.valueOf(actual_workload), String.valueOf(dec), "");
+                        } else if (!synchronization && Math.round((last_measure - start_range) / (wait * 1.0f)) > BYTE + (BYTE - bits.size())) {
+                            // corner case of remaining zero-bits
+                            for (int i = 0; i < BYTE - bits.size(); i++) bits.add(0);
+                        }
                 }
 
             }

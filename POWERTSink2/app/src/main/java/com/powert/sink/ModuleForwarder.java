@@ -1,6 +1,8 @@
 package com.powert.sink;
 
 import android.content.Context;
+import android.os.Process;
+import android.util.Log;
 
 import org.pytorch.IValue;
 import org.pytorch.Module;
@@ -30,10 +32,13 @@ public class ModuleForwarder {
     }
 
     public int forward(long sample_time) {
+        android.os.Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
         long start = System.currentTimeMillis();
         int c = 0;
         while (System.currentTimeMillis() - start < sample_time ) {
+//            long p1 = System.currentTimeMillis();
             module.forward(this.iValue).toTensor();
+//            Log.d("SINK2", "time: " + (System.currentTimeMillis() - p1));
             c++;
             try {
                 Thread.sleep(1);

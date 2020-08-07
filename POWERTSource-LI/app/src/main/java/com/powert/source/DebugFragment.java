@@ -1,7 +1,6 @@
 package com.powert.source;
 
 import android.annotation.SuppressLint;
-import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
@@ -27,10 +26,7 @@ import com.powert.source.utility.Wav.WavTransform;
 import com.powert.source.utility.mfcc.MFCC;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -253,6 +249,7 @@ public class DebugFragment extends Fragment {
                     scores = moduleForwarder.forward(selected_module);
                     end_time = System.currentTimeMillis();
                     this.forward_time = end_time - start_time;
+//                    Log.d(LOG_TAG, "forward time: " + this.forward_time);
 
                     // Wait given millis between each iteration
                     try {

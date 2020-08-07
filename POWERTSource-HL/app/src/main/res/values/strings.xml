@@ -7,6 +7,10 @@
         <item>High</item>
         <item>Combined</item>
     </string-array>
+    <string-array name="encodings">
+        <item>characters</item>
+        <item>bits</item>
+    </string-array>
     <string name="message_store">The last registration is saved in </string>
     <string name="duration_t">times</string>
     <string name="duration_s">seconds</string>
@@ -24,9 +28,11 @@
     <string name="debug">Debug</string>
     <string name="send">Send a message</string>
     <string name="message">Type here the message to send to sink</string>
-    <string name="done">Done</string>
+    <string name="standard">Standard\n encoding</string>
     <string name="random">Random</string>
     <string name="time">Time for a bit </string>
     <string name="startwait">100</string>
-    <string name="manchester">Manchester encoding </string>
+    <string name="startrandom">6</string>
+    <string name="manchester">Manchester\n encoding</string>
+    <string name="encoding">Message encoding </string>
 </resources>

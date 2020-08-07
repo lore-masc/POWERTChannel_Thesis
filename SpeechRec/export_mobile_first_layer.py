@@ -2,6 +2,7 @@ import argparse
 from pathlib import Path
 
 import torch
+from thop import profile
 from torch.utils.data import DataLoader
 from torchvision.transforms import Compose
 
@@ -45,6 +46,11 @@ def export_model(model, input_path):
     net = get_net(model=model)
     net.cpu()
     net.eval()
+
+    macs, params = profile(net, inputs=(audio,), verbose=False)
+    print("\n%s\t| %s" % ("Params(M)", "FLOPs(G)"))
+    print("%.2f\t\t| %.2f" % (params / (1000 ** 2), macs / (1000 ** 3)))
+    print()
 
     export_model_path = get_model_weights(model=model).replace("weights", "mobile").replace(".pth", "firstLayer.pt")
 

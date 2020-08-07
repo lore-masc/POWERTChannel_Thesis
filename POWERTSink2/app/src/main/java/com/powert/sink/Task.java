@@ -2,14 +2,11 @@ package com.powert.sink;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.util.Log;
 import android.widget.EditText;
-import android.widget.FrameLayout;
 import android.widget.LinearLayout;
-import android.widget.TextView;
 
 import androidx.annotation.RequiresApi;
 
@@ -28,6 +25,7 @@ public class Task extends AsyncTask<Void, Integer, Void> {
     private static final int PREAMBLE_SIZE = 5;
     private static int average_size;
     private boolean manchester;
+    private ArrayList<Integer> bits;
 
     @SuppressLint("StaticFieldLeak")
     LinearLayout ll;
@@ -63,7 +61,8 @@ public class Task extends AsyncTask<Void, Integer, Void> {
     @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
     protected Void doInBackground(Void... voids) {
-        ArrayList<Integer> bits = new ArrayList<>();
+        this.bits = new ArrayList<>();
+        ArrayList<Integer> logBits = new ArrayList<>();
         ArrayList<Integer> samples = new ArrayList<>();
         ArrayList<Long> timestamps = new ArrayList<>();
 
@@ -78,6 +77,21 @@ public class Task extends AsyncTask<Void, Integer, Void> {
 
         // Post task
         if (this.usingManchesterEncoding()){
+            // Min and max
+            int MIN = 1; //Math.max(1, Collections.min(samples));
+            int MAX = 5; //Collections.max(samples)-1;
+
+            // Increment the amplitude
+            int lastIndexSampleMIN = samples.indexOf(MIN);
+            for (int i = lastIndexSampleMIN; i < samples.size(); i++) {
+                if (i > lastIndexSampleMIN && samples.get(i) == MIN) {
+                    if (timestamps.get(i) - timestamps.get(lastIndexSampleMIN) <= 60) {
+                        for (int j = lastIndexSampleMIN; j < i; j++)    samples.set(j, MIN);
+                    }
+                    lastIndexSampleMIN = i;
+                }
+            }
+
             // Compute Movement Average curve
             ArrayList<Float> averages = new ArrayList<>();
             for (int i = average_size; i < samples.size(); i++) {
@@ -92,93 +106,82 @@ public class Task extends AsyncTask<Void, Integer, Void> {
 
                 movingAverageWindow.clear();
             }
-            Log.d("SINK2", "Phase 2.");
 
-            // Compute local variances
-            // variances start after 2*average_size items
-            ArrayList<Float> variances = new ArrayList<>();
-            for (int i = average_size; i < averages.size(); i++) {
-                ArrayList<Float> varianceWindow = new ArrayList<>();
-                float variance;
-
-                for (int j = i - average_size; j < i; j++)
-                    varianceWindow.add(averages.get(j));
-                variance = variance(varianceWindow);
-                variances.add(variance);
-
-                varianceWindow.clear();
-            }
-            Log.d("SINK2", "Phase 3.");
-
-            // Extract useful points
-            ArrayList<Integer> points = new ArrayList<>();
-            long nextTimestamp = 0;
-            for (int i = 0; i < variances.size(); i++) {
-                int idx = i + 2*average_size;
-                long instant = timestamps.get(idx);
-                if (variances.get(i) > 0.2 && instant > nextTimestamp) {
-                    long diff_left = nextTimestamp - timestamps.get(idx - 1);
-                    long diff_right = instant - nextTimestamp;
-                    int new_point = (diff_left < diff_right) ? idx - 1 : idx;
-                    points.add(new_point);
-                    nextTimestamp = timestamps.get(new_point) + 2*wait;
+            // Discretize
+            ArrayList<Integer> rbits = new ArrayList<>();
+            float bit_threshold1 = 2.9f;
+            float bit_threshold2 = 3.1f;
+            int last_decision = MAX;
+            for (int i = 0; i < averages.size(); i++) {
+                if (averages.get(i) >= bit_threshold1 && averages.get(i) <= bit_threshold2) {
+                    rbits.add(last_decision);
+                } else {
+                    if (averages.get(i) > bit_threshold2) {
+                        rbits.add(MAX);
+                    } else if (averages.get(i) < bit_threshold1) {
+                        rbits.add(MIN);
+                    }
+                    last_decision = rbits.get(rbits.size()-1);
                 }
             }
-            Log.d("SINK2", "Phase 4.");
 
-            // Collect bits
-            for (int i = 0; i < points.size(); i++) {
-                int idx = points.get(i);
-                float previousSample = averages.get(idx-1);
-                float sample = averages.get(idx);
-                float subsequentSample = averages.get(idx+1);
-
-                // Up edge
-                if (previousSample <= sample && sample <= subsequentSample) {
-                    bits.add(0);
-                }
-                // Down edge
-                if (previousSample >= sample && sample >= subsequentSample) {
-                    bits.add(1);
+            // Decode
+            long lastTimestamp = timestamps.get(average_size);
+            for (int i = 1; i < rbits.size(); i++) {
+                int idx = average_size + i;
+                if (!rbits.get(i).equals(rbits.get(i-1))) {
+                    long time = timestamps.get(idx-1) - lastTimestamp;
+                    int nSameBits = Math.max(1, Math.round(time / (wait*1.0f)));
+                    nSameBits = Math.min(2, nSameBits);
+                    for (int j = 0; j < nSameBits; j++)
+                        logBits.add((rbits.get(i-1) == MAX) ? 0 : 1);
+                    lastTimestamp = timestamps.get(idx);
                 }
             }
-            Log.d("SINK2", "Phase 5.");
 
-            // Find preamble
-            int zeros = 0;
-            boolean synch = false;
-            for (int i = 0; i < bits.size() && !synch; i++) {
-                if (bits.get(i) == 0) zeros++;
-                else                  zeros = 0;
-
-                if (zeros == PREAMBLE_SIZE) {
-                    bits.subList(0, i).clear();
-                    synch = true;
+            // Retrieve single bits
+            {
+                int i = 0;
+                while (i < logBits.size()-1) {
+                    if (logBits.get(i) == 0 && logBits.get(i+1) == 1) {
+                        bits.add(0);
+                        i+=2;
+                    } else if (logBits.get(i) == 1 && logBits.get(i+1) == 0) {
+                        bits.add(1);
+                        i+=2;
+                    } else {
+                        i++;
+                    }
                 }
             }
-            Log.d("SINK2", "Phase 6.");
+
+            // Retrieve preamble
+            int count = 0;
+            boolean found = false;
+            for (int i = 0; i < bits.size()-1 && !found; i++) {
+                if (bits.get(i) == 0) {
+                    count++;
+                    if (count == PREAMBLE_SIZE) {
+                        bits.subList(0, i).clear();
+                        found = true;
+                    }
+                } else                           count = 0;
+            }
+            Log.d("SINK2", "Phase 2. Found: " + found);
 
             // Decode payload
-            int size;
-
-            // Complete last byte
-            do {
-                bits.add(0);
-                size = bits.size();
-            } while (size % BYTE != 0);
-
-            for (int i = BYTE; i < size; i += BYTE) {
-                // Retrieve next char
-                int dec = 0;
-                for (int b = 0; b < BYTE; b++)
-                    dec += (bits.get(b) == 1) ? Math.pow(2, BYTE - (b + 1)) : 0;
-
-                // Remove used bits
-                bits.subList(0, BYTE).clear();
-                publishProgress(dec);
+            if (found) {
+                int size = bits.size();
+                for (int i = 0; i < BYTE - (size%BYTE); i++)     bits.add(0);
+                while (bits.size() > 0) {
+                    // Retrieve next char
+                    int dec = binaryToDec();
+                    publishProgress(dec);
 //                Log.d("SINK2", "" + dec);
+                }
             }
-            Log.d("SINK2", "Phase 7.");
+
+            Log.d("SINK2", "Phase 3.");
 
         } else {
             // Compute Movement Average curve
@@ -267,12 +270,7 @@ public class Task extends AsyncTask<Void, Integer, Void> {
                 int size = bits.size();
                 for (int i = BYTE; i < size; i += BYTE) {
                     // Retrieve next char
-                    int dec = 0;
-                    for (int b = 0; b < BYTE; b++)
-                        dec += (bits.get(b) == 1) ? Math.pow(2, BYTE - (b + 1)) : 0;
-
-                    // Remove used bits
-                    bits.subList(0, BYTE).clear();
+                    int dec = binaryToDec();
                     publishProgress(dec);
 //                Log.d("SINK2", "" + dec);
                 }
@@ -310,6 +308,16 @@ public class Task extends AsyncTask<Void, Integer, Void> {
         this.manchester = enable;
     }
 
+    private static float weightedAverageArray(ArrayList<Integer> arr) {
+        float sum = 0.0f;
+        int w = 0;
+        for(int i = 0; i < arr.size(); i++) {
+            w += (i+1);
+            sum += arr.get(i) * (i+1);
+        }
+        return  sum / w;
+    }
+
     private static float arithmeticAverageArray(ArrayList arr) {
         float sum = 0.0f;
 
@@ -329,5 +337,19 @@ public class Task extends AsyncTask<Void, Integer, Void> {
         for(int i = 0; i < arr.size(); i++)
             sommaScartiQuad += (arr.get(i) -m) * (arr.get(i) -m);
         return sommaScartiQuad/arr.size();
+    }
+
+    private int binaryToDec() {
+        int dec = 0;
+        int size = bits.size();
+        for (int i = 0; i < Math.min(BYTE, size); i++)
+            dec += (bits.get(i) == 1) ? Math.pow(2, BYTE - (i + 1)) : 0;
+
+        Log.d("SINK", "" + bits);
+        Log.d("Sink", "" + String.valueOf(Character.toChars(dec)));
+
+        for (int i = 0; i < Math.min(BYTE, size); i++)
+            bits.remove(0);
+        return dec;
     }
 }

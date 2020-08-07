@@ -72,6 +72,7 @@ public class PowertChannelManager {
     private void sendStreamBits(int bits[]) {
         android.os.Process.setThreadPriority(Process.THREAD_PRIORITY_FOREGROUND);
         for(int i = 0; i < bits.length; i++) {
+            long p1 = System.currentTimeMillis();
             if (bits[i] == 1) {
                 this.sendBit1();
                 if (this.usingManchesterEncoding())
@@ -81,7 +82,7 @@ public class PowertChannelManager {
                 if (this.usingManchesterEncoding())
                     this.sendBit1();
             }
-//            Log.d("POWERT", "Bit " + i + " sended. It's a " + bits[i] + ". Total time " + (System.currentTimeMillis() - p1) + " - Count: " + count);
+            Log.d("POWERT-"+p1, "Bit " + i + " sended. It's a " + bits[i] + ". Total time " + (System.currentTimeMillis() - p1) + " - Count: " + count);
         }
     }
 
@@ -111,9 +112,10 @@ public class PowertChannelManager {
      * Send a message converting the passed string into a binary encode.
      * The package will be composed with a long bit stream and a short preamble.
      * @param message String of message to send.
+     * @param encode_type type of encoding to convert.
      */
-    void sendPackage(String message) {
-        int[] bits = getBitArray(message);
+    void sendPackage(String message, PocFragment.ENCODE_TYPE encode_type) {
+        int[] bits = (encode_type == PocFragment.ENCODE_TYPE.CHARACTER) ? stringToBitArray(message) : bitsToBitArray(message);
         this.sendLongStream();
         this.sendPreamble();
         this.sendStreamBits(bits);
@@ -136,11 +138,11 @@ public class PowertChannelManager {
     }
 
     /**
-     * Convert a string into int array.
+     * Convert the string in correspondent bits. Then, they are stored into int array.
      * @param message String to convert.
      * @return the array of bits.
      */
-    static int[] getBitArray(String message) {
+    static int[] stringToBitArray(String message) {
         byte[] bytes = message.getBytes();
         StringBuilder binary = new StringBuilder();
         for (byte b : bytes) {
@@ -154,6 +156,20 @@ public class PowertChannelManager {
         int[] bits = new int[binary.length()];
         for (int i = 0; i < bits.length; i++)
             bits[i] = Integer.parseInt(stringBinary.substring(i, i+1));
+        return bits;
+    }
+
+    /**
+     * Convert the represented bits into int array.
+     * @param message String containing represented bits.
+     * @return the array of bits.
+     */
+    static int[] bitsToBitArray(String message) {
+        int[] bits = new int[message.length()];
+        char[] chars = message.toCharArray();
+        for (int i = 0; i < chars.length; i++)
+            if (chars[i] == '0') bits[i] = 0;
+            else bits[i] = 1;
         return bits;
     }
 
