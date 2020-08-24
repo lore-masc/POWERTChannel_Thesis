@@ -81,18 +81,22 @@ public class Task extends AsyncTask<Void, Integer, Void> {
             int MIN = 1; //Math.max(1, Collections.min(samples));
             int MAX = 5; //Collections.max(samples)-1;
 
-            // Increment the amplitude
-            int lastIndexSampleMIN = samples.indexOf(MIN);
-            for (int i = lastIndexSampleMIN; i < samples.size(); i++) {
-                if (i > lastIndexSampleMIN && samples.get(i) == MIN) {
-                    if (timestamps.get(i) - timestamps.get(lastIndexSampleMIN) <= 60) {
-                        for (int j = lastIndexSampleMIN; j < i; j++)    samples.set(j, MIN);
+            // smooth the curve
+            int beforeSmoothing = samples.indexOf(MIN);
+            for (int i = beforeSmoothing; i < samples.size(); i++) {
+                if (i > beforeSmoothing) {
+                    if (timestamps.get(i) - timestamps.get(beforeSmoothing) <= 60) {
+                        for (int j = beforeSmoothing; j < i; j++)
+                            if (samples.get(i) == MIN)
+                                samples.set(j, MIN);
+                            else if (samples.get(i) == MAX)
+                                samples.set(j, MAX);
                     }
-                    lastIndexSampleMIN = i;
+                    beforeSmoothing = i;
                 }
             }
 
-            // Compute Movement Average curve
+            // Compute Moving Average curve
             ArrayList<Float> averages = new ArrayList<>();
             for (int i = average_size; i < samples.size(); i++) {
                 ArrayList<Integer> movingAverageWindow = new ArrayList<>();
@@ -184,7 +188,7 @@ public class Task extends AsyncTask<Void, Integer, Void> {
             Log.d("SINK2", "Phase 3.");
 
         } else {
-            // Compute Movement Average curve
+            // Compute moving average curve
             ArrayList<Float> averages = new ArrayList<>();
             for (int i = average_size; i < samples.size(); i++) {
                 ArrayList<Integer> movingAverageWindow = new ArrayList<>();
@@ -248,19 +252,19 @@ public class Task extends AsyncTask<Void, Integer, Void> {
                 if (synchronization)
                     bit_threshold = simpleRegression.predict(timestamps.get(points.get(i)));
 
-                if (synchronization && consecutive_zeros == PREAMBLE_SIZE) {
-                    bits.clear();
-                    synchronization = false;
-                    message = true;
-                    bit_threshold = simpleRegression.predict(timestamps.get(points.get(i - PREAMBLE_SIZE)));
-                }
-
                 if (pointValue < bit_threshold) {
                     bits.add(1);
                     if (synchronization) consecutive_zeros = 0;
                 } else {
                     bits.add(0);
                     if (synchronization) consecutive_zeros++;
+                }
+
+                if (synchronization && consecutive_zeros == PREAMBLE_SIZE) {
+                    bits.clear();
+                    synchronization = false;
+                    message = true;
+                    bit_threshold = simpleRegression.predict(timestamps.get(points.get(i - PREAMBLE_SIZE)));
                 }
             }
 //        Log.d("SINK2", "Phase 6.");
@@ -275,6 +279,7 @@ public class Task extends AsyncTask<Void, Integer, Void> {
 //                Log.d("SINK2", "" + dec);
                 }
             }
+            Log.d("SINK2", "Phase 7.");
         }
 //        Log.d("SINK2", "Phase 7.");
 

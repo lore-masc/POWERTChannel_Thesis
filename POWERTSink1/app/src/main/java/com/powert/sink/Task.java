@@ -68,13 +68,12 @@ public class Task extends AsyncTask<Void, String, Void> {
         long consecutive_bits;
         this.bits = new ArrayList<>();
         ArrayList<Float> samples = new ArrayList<>();
+        ArrayList<Long> logTimestamps = new ArrayList<>();
+        ArrayList<Float> logSamples = new ArrayList<>();
+        ArrayList<Integer> logBits = new ArrayList<>();
+        ArrayList<Float> averages = new ArrayList<>();
 
         if (this.usingManchesterEncoding()) {
-            ArrayList<Long> logTimestamps = new ArrayList<>();
-            ArrayList<Float> logSamples = new ArrayList<>();
-            ArrayList<Integer> logBits = new ArrayList<>();
-            ArrayList<Float> averages = new ArrayList<>();
-
             long last_measure = 0;
             int count = 0;
 
@@ -180,12 +179,15 @@ public class Task extends AsyncTask<Void, String, Void> {
                     }
                 } while (start && this.isRecording());
                 samples.add(sampled_workload);
+                logSamples.add(sampled_workload);
+                logTimestamps.add(System.currentTimeMillis());
 
                 long last_measure = System.currentTimeMillis();
 
                 if (samples.size() > average_size) {
                     samples.remove(0);
                     float actual_workload = weightedAverageArray(samples);
+                    averages.add(actual_workload);
 
                     publishProgress(mode, String.valueOf(actual_workload), "", "");
 
@@ -202,23 +204,27 @@ public class Task extends AsyncTask<Void, String, Void> {
                             publishProgress(mode, String.valueOf(actual_workload), "", "");
                         }
                         for (int i = 0; i < consecutive_bits; i++) bits.add(0);
+                        logBits.add(1);
                         zero_bit = false;
                     } else if (actual_workload < bit_threshold && !zero_bit) {
                         consecutive_bits = Math.max(1, Math.round((last_measure - start_range) / (wait * 1.0f)));
 //                    Log.d("SINK", "Entrato nello 0 dopo " + (last_measure - start_range) + " ms = " + Math.round((last_measure - start_range) / (wait * 1.0f)));
                         start_range = System.currentTimeMillis();
                         for (int i = 0; i < consecutive_bits; i++) bits.add(1);
+                        logBits.add(1);
                         zero_bit = true;
+                    } else {
+                        logBits.add(0);
                     }
 
                     // get message
-                        if (!synchronization && bits.size() >= BYTE) {
-                            int dec = binaryToDec();
-                            publishProgress(mode, String.valueOf(actual_workload), String.valueOf(dec), "");
-                        } else if (!synchronization && Math.round((last_measure - start_range) / (wait * 1.0f)) > BYTE + (BYTE - bits.size())) {
-                            // corner case of remaining zero-bits
-                            for (int i = 0; i < BYTE - bits.size(); i++) bits.add(0);
-                        }
+                    if (!synchronization && bits.size() >= BYTE) {
+                        int dec = binaryToDec();
+                        publishProgress(mode, String.valueOf(actual_workload), String.valueOf(dec), "");
+                    } else if (!synchronization && Math.round((last_measure - start_range) / (wait * 1.0f)) > BYTE + (BYTE - bits.size())) {
+                        // corner case of remaining zero-bits
+                        for (int i = 0; i < BYTE - bits.size(); i++) bits.add(0);
+                    }
                 }
 
             }

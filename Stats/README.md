@@ -29,7 +29,7 @@ The following tests have been executed in a virtual environment. The Manchester 
 |2|LI|500|100%|92%|
 |2|LI|300|98%|92%|
 |2|LI|200|97%|92%|
-|2|LI|100|91%|87%|
+|2|LI|100|91%|88%|
 |2|LI|50|88%|78%|
 
 |Sink|Source|Time for a bit (ms)|(Standard code) Accuracy|(Manchester code) Accuracy|

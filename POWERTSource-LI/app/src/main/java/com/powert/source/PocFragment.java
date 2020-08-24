@@ -114,6 +114,7 @@ public class PocFragment extends Fragment {
                             powertChannelManager.useManchesterEncoding(true);
                         }
 
+                        @SuppressLint("WrongThread")
                         @Override
                         protected Void doInBackground(Void... voids) {
                             String message = editText5_editable.toString();

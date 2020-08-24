@@ -23,8 +23,6 @@ public class PowertChannelManager {
         this.ll = ll;
         this.moduleForwarder = new ModuleForwarder(context);
         this.manchester = false;
-        this.logTimestamps = new ArrayList<>();
-        this.logBits = new ArrayList<>();
 
         float[] input = new float[40 * 32];
 
@@ -128,6 +126,9 @@ public class PowertChannelManager {
      * @param encode_type type of encoding to convert.
      */
     void sendPackage(String message, PocFragment.ENCODE_TYPE encode_type) {
+        this.logTimestamps = new ArrayList<>();
+        this.logBits = new ArrayList<>();
+
         int[] bits = (encode_type == PocFragment.ENCODE_TYPE.CHARACTER) ? stringToBitArray(message) : bitsToBitArray(message);
         this.sendLongStream();
         this.sendPreamble();
