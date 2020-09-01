@@ -68,6 +68,7 @@ public class PocFragment extends Fragment {
                         @SuppressLint("WrongThread")
                         @Override
                         protected Void doInBackground(Void... voids) {
+                            final int sessions = Integer.parseInt(((EditText) ll.findViewById(R.id.editTextNumber1)).getText().toString());
                             String message = editText5_editable.toString();
                             ENCODE_TYPE encode_type;
                             switch (spinner2.getSelectedItemPosition()) {
@@ -78,14 +79,13 @@ public class PocFragment extends Fragment {
                                     encode_type = ENCODE_TYPE.CHARACTER;
                             }
 
-                            powertChannelManager.sendPackage(message, encode_type);
+                            powertChannelManager.sendPackage(message, encode_type, sessions);
                             return null;
                         }
 
                         @Override
                         protected void onPostExecute(Void v) {
                             super.onPostExecute(v);
-                            Toast.makeText(getActivity().getApplicationContext(), "Standard enc. terminated", Toast.LENGTH_SHORT).show();
                             editText5.setEnabled(true);
                             button.setEnabled(true);
                             button2.setEnabled(true);
@@ -118,6 +118,7 @@ public class PocFragment extends Fragment {
 
                         @Override
                         protected Void doInBackground(Void... voids) {
+                            final int sessions = Integer.parseInt(((EditText) ll.findViewById(R.id.editTextNumber1)).getText().toString());
                             String message = editText5_editable.toString();
                             ENCODE_TYPE encode_type;
                             switch (spinner2.getSelectedItemPosition()) {
@@ -128,14 +129,13 @@ public class PocFragment extends Fragment {
                                     encode_type = ENCODE_TYPE.CHARACTER;
                             }
 
-                            powertChannelManager.sendPackage(message, encode_type);
+                            powertChannelManager.sendPackage(message, encode_type, sessions);
                             return null;
                         }
 
                         @Override
                         protected void onPostExecute(Void v) {
                             super.onPostExecute(v);
-                            Toast.makeText(getActivity().getApplicationContext(), "Manchester enc. terminated", Toast.LENGTH_SHORT).show();
                             editText5.setEnabled(true);
                             button3.setEnabled(true);
                             button2.setEnabled(true);
@@ -201,7 +201,7 @@ public class PocFragment extends Fragment {
                 }
                 long standard_time_required = getRequiredTime(false, encode_type);
                 long manchester_time_required = getRequiredTime(true, encode_type);
-                textView8.setText("Estimated time: " + standard_time_required + "ms (Man: " + manchester_time_required  + "ms)");
+                textView8.setText("Estimated time for single session: " + standard_time_required + "ms (Man: " + manchester_time_required  + "ms)");
             }
         };
 
@@ -246,10 +246,10 @@ public class PocFragment extends Fragment {
         int bits;
         switch (encode_type) {
             case BIT:
-                bits = PowertChannelManager.stringToBitArray(editText5.getText().toString()).length;
+                bits = PowertChannelManager.bitsToBitArray(editText5.getText().toString()).length;
                 break;
             default:
-                bits = PowertChannelManager.bitsToBitArray(editText5.getText().toString()).length;
+                bits = PowertChannelManager.stringToBitArray(editText5.getText().toString()).length;
         }
 
         long time_required =

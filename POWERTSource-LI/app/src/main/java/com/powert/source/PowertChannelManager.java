@@ -1,9 +1,13 @@
 package com.powert.source;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
+import android.os.AsyncTask;
 import android.os.Process;
 import android.util.Log;
 import android.widget.LinearLayout;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -12,6 +16,7 @@ import java.util.Random;
 public class PowertChannelManager {
     private LinearLayout ll;
     private ModuleForwarder moduleForwarder;
+    private Context context;
     private boolean manchester;
     public static final int LONG_STREAM_SIZE = 40;
     public static final int PREAMBLE_SIZE = 5;
@@ -21,6 +26,7 @@ public class PowertChannelManager {
 
     PowertChannelManager(LinearLayout ll, Context context) throws IOException {
         this.ll = ll;
+        this.context = context;
         this.moduleForwarder = new ModuleForwarder(context);
         this.manchester = false;
 
@@ -119,20 +125,63 @@ public class PowertChannelManager {
         this.manchester = enable;
     }
 
+
     /**
      * Send a message converting the passed string into a binary encode.
      * The package will be composed with a long bit stream and a short preamble.
      * @param message String of message to send.
      * @param encode_type type of encoding to convert.
+     * @param sessions number of sessions to repeat.
      */
-    void sendPackage(String message, PocFragment.ENCODE_TYPE encode_type) {
+    void sendPackage(String message, PocFragment.ENCODE_TYPE encode_type, final int sessions) {
         this.logTimestamps = new ArrayList<>();
         this.logBits = new ArrayList<>();
 
-        int[] bits = (encode_type == PocFragment.ENCODE_TYPE.CHARACTER) ? stringToBitArray(message) : bitsToBitArray(message);
-        this.sendLongStream();
-        this.sendPreamble();
-        this.sendStreamBits(bits);
+        final int[] bits = (encode_type == PocFragment.ENCODE_TYPE.CHARACTER) ? stringToBitArray(message) : bitsToBitArray(message);
+
+        @SuppressLint("StaticFieldLeak") final AsyncTask<Void, String, Void> asyncTask = new AsyncTask<Void, String, Void>() {
+            @Override
+            protected Void doInBackground(Void... voids) {
+                int iterations = Math.max(1, sessions);
+                int i = 0;
+                do {
+                    publishProgress("Session " + (i+1) + " - Long stream sending...");
+                    sendLongStream();
+                    publishProgress("Session " + (i+1) + " - Preamble sending...");
+                    sendPreamble();
+                    publishProgress("Session " + (i+1) + " - Message sending...");
+                    sendStreamBits(bits);
+                    i++;
+                    if (i < iterations) {
+                        publishProgress("Session " + (i) + " - Terminating...");
+                        long wait_time = (usingManchesterEncoding()) ? 16*PowertChannelManager.TIME : 8*PowertChannelManager.TIME;
+                        try {
+                            Thread.sleep(wait_time);   // window of null byte
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                } while (i < iterations);
+                publishProgress("Done.");
+                return null;
+            }
+
+            @Override
+            protected void onProgressUpdate(String... values) {
+                super.onProgressUpdate(values);
+                TextView textView10 = ll.findViewById(R.id.textView10);
+                if (values.length > 0)
+                    textView10.setText(values[0]);
+            }
+
+            @Override
+            protected void onPostExecute(Void aVoid) {
+                super.onPostExecute(aVoid);
+                Toast.makeText(context, "Message sent", Toast.LENGTH_SHORT).show();
+            }
+        };
+        asyncTask.execute();
+
         return;
     }
 

@@ -26,18 +26,22 @@ public class Task extends AsyncTask<Void, String, Void> {
     private static int average_size;
     private boolean manchester;
     private ArrayList<Integer> bits;
+    private ArrayList< ArrayList<Integer> > majority;
+    private int current_session, current_position;
 
     @SuppressLint("StaticFieldLeak")
     LinearLayout ll;
     @SuppressLint("StaticFieldLeak")
     Context context;
     boolean recording;
+    boolean cls;
 
 
     Task (LinearLayout ll, Context context) {
         this.ll = ll;
         this.context = context;
         this.manchester = false;
+        this.cls = false;
         wait = Long.parseLong(((EditText) ll.findViewById(R.id.editTextNumber)).getText().toString());
         average_size = Math.round(wait / READ_CORES);
 
@@ -72,6 +76,10 @@ public class Task extends AsyncTask<Void, String, Void> {
         ArrayList<Float> logSamples = new ArrayList<>();
         ArrayList<Integer> logBits = new ArrayList<>();
         ArrayList<Float> averages = new ArrayList<>();
+        this.majority = new ArrayList<>();
+        this.majority.add(new ArrayList<Integer>());
+        this.current_session = 0;
+        this.current_position = 0;
 
         if (this.usingManchesterEncoding()) {
             long last_measure = 0;
@@ -136,6 +144,28 @@ public class Task extends AsyncTask<Void, String, Void> {
                                 }
                             } else {
                                 logBits.add(-1);
+                                // end session
+                                if (!synchronization && percent_time >= 7f) {
+                                    // Return last bits
+                                    if (bits.size() > 0) {
+                                        int dec;
+                                        for (int i = 0; i < BYTE - bits.size(); i++) {
+                                            bits.add(0);
+                                        }
+                                        dec = binaryToDec();
+                                        publishProgress(mode, "", String.valueOf(dec), "");
+                                    }
+
+                                    mode = this.context.getResources().getString(R.string.mode1);
+                                    synchronization = true;
+                                    bits.clear();
+                                    count = 0;
+                                    majority.add(new ArrayList<Integer>());
+                                    current_session++;
+                                    current_position = 0;
+                                    last_measure = now;
+                                    publishProgress(mode, String.valueOf(actual_diff), "-1", "");
+                                }
                             }
                         } else {
                             logBits.add(-1);
@@ -146,6 +176,7 @@ public class Task extends AsyncTask<Void, String, Void> {
                     // get message
                     if (!synchronization && bits.size() >= BYTE) {
                         int dec = binaryToDec();
+                        current_position += BYTE;
                         publishProgress(mode, String.valueOf(actual_diff), String.valueOf(dec), "");
                     } else {
                         publishProgress(mode, String.valueOf(actual_diff), "", "");
@@ -154,15 +185,6 @@ public class Task extends AsyncTask<Void, String, Void> {
 
             }
 
-            // Return last bits
-            if (bits.size() > 0) {
-                int dec;
-                for (int i = 0; i < BYTE - bits.size(); i++) {
-                    bits.add(0);
-                }
-                dec = binaryToDec();
-                publishProgress(mode, "", String.valueOf(dec), "");
-            }
             Log.d("Sink", "Finish");
         } else {
             while (this.isRecording()) {
@@ -204,6 +226,22 @@ public class Task extends AsyncTask<Void, String, Void> {
                             publishProgress(mode, String.valueOf(actual_workload), "", "");
                         }
                         for (int i = 0; i < consecutive_bits; i++) bits.add(0);
+                        if (consecutive_bits >= BYTE) {
+                            mode = this.context.getResources().getString(R.string.mode1);
+                            synchronization = true;
+
+                            // corner case of remaining zero-bits
+                            for (int i = 0; i < BYTE - bits.size(); i++) bits.add(0);
+                            int dec = binaryToDec();
+                            publishProgress(mode, String.valueOf(actual_workload), String.valueOf(dec), "");
+
+                            bits.clear();
+                            majority.add(new ArrayList<Integer>());
+                            current_session++;
+                            current_position = 0;
+//                            Log.d("SINK", "current_session: " + current_session + "; size majority: " + majority.size());
+                            publishProgress(mode, String.valueOf(actual_workload), "-1", "");
+                        }
                         logBits.add(1);
                         zero_bit = false;
                     } else if (actual_workload < bit_threshold && !zero_bit) {
@@ -220,6 +258,7 @@ public class Task extends AsyncTask<Void, String, Void> {
                     // get message
                     if (!synchronization && bits.size() >= BYTE) {
                         int dec = binaryToDec();
+                        current_position += BYTE;
                         publishProgress(mode, String.valueOf(actual_workload), String.valueOf(dec), "");
                     } else if (!synchronization && Math.round((last_measure - start_range) / (wait * 1.0f)) > BYTE + (BYTE - bits.size())) {
                         // corner case of remaining zero-bits
@@ -247,19 +286,31 @@ public class Task extends AsyncTask<Void, String, Void> {
     protected void onProgressUpdate(String... values) {
         super.onProgressUpdate(values);
         EditText editText3 = ll.findViewById(R.id.editText3);
+        TextView textView7 = ll.findViewById(R.id.textView7);
         TextView textView8 = ll.findViewById(R.id.textView8);
         TextView textView9 = ll.findViewById(R.id.textView9);
         TextView textView10 = ll.findViewById(R.id.textView10);
         TextView textView13 = ll.findViewById(R.id.textView13);
 
+        textView7.setText("Session: " + (this.current_session+1));
+
         if (!values[3].equals(""))
             textView10.setText("Overhead workload: " + values[3]);
 
-        if (values.length == 5)
+        if (values.length >= 5 && !values[4].equals(""))
             textView13.setText("Last evaluated threshold: " + values[4]);
 
-        if (!values[2].equals(""))
-            editText3.append(String.valueOf(Character.toChars(Integer.parseInt(values[2]))[0]));
+        if (!values[2].equals("")) {
+            if (values[2].equals("-1")) {
+                this.cls = true;
+            } else {
+                if (this.cls) {
+                    editText3.setText("");
+                    this.cls = false;
+                }
+                editText3.append(String.valueOf(Character.toChars(Integer.parseInt(values[2]))[0]));
+            }
+        }
 
         textView8.setText("Last workload: " + values[1]);
 
@@ -293,15 +344,30 @@ public class Task extends AsyncTask<Void, String, Void> {
     private int binaryToDec() {
         int dec = 0;
         int size = bits.size();
-        for (int i = 0; i < Math.min(BYTE, size); i++)
-            dec += (bits.get(i) == 1) ? Math.pow(2, BYTE - (i + 1)) : 0;
 
+        for (int i = 0; i < Math.min(BYTE, size); i++) {
+            this.majority.get(this.current_session).add(bits.get(i));
+            if (this.majority.size() > 1) {
+                bits.set(i, vote(current_position+i));
+            }
+            dec += (bits.get(i) == 1) ? Math.pow(2, BYTE - (i + 1)) : 0;
+        }
         Log.d("SINK", "" + bits);
         Log.d("Sink", "" + String.valueOf(Character.toChars(dec)));
 
         for (int i = 0; i < Math.min(BYTE, size); i++)
             bits.remove(0);
         return dec;
+    }
+
+    private int vote(int index) {
+        int zeros = 0, ones = 0;
+        for ( ArrayList<Integer> session : this.majority )
+            if (session.size() > index) {
+                if (session.get(index) == 1) ones++;
+                else zeros++;
+            }
+        return (ones > zeros) ? 1 : 0;
     }
 
 }
