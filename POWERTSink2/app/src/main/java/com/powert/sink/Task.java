@@ -210,7 +210,7 @@ public class Task extends AsyncTask<Void, String, Void> {
                     if (bits.get(i) == 0) {
                         count++;
                         if (count == PREAMBLE_SIZE) {
-                            bits.subList(0, i).clear();
+                            bits.subList(0, i+1).clear();
                             found = true;
                         }
                     } else count = 0;
@@ -262,9 +262,9 @@ public class Task extends AsyncTask<Void, String, Void> {
                     last_p0 = i;
                 } else if (p0 && all_averages.get(i) < 3.5 && all_timestamps.get(i+average_size) - all_timestamps.get(last_p0+average_size) >= BYTE*wait || i+1 == all_averages.size()) {
                     Log.d("Sink2", "New session after interruption of " + (all_timestamps.get(last_p0+average_size)-all_timestamps.get(0)) + "-" + (all_timestamps.get(i+average_size)-all_timestamps.get(0)) + " = " + (all_timestamps.get(i+average_size) - all_timestamps.get(last_p0+average_size)));
-                    sessions_samplings.add(new ArrayList<>(all_samplings.subList(start_range, i+average_size)));
-                    sessions_averages.add(new ArrayList<>(all_averages.subList(start_range, i)));
-                    sessions_timestamps.add(new ArrayList<>(all_timestamps.subList(start_range, i+average_size)));
+                    sessions_samplings.add(new ArrayList<>(all_samplings.subList(start_range, i+average_size+1)));
+                    sessions_averages.add(new ArrayList<>(all_averages.subList(start_range, i+1)));
+                    sessions_timestamps.add(new ArrayList<>(all_timestamps.subList(start_range, i+average_size+1)));
                     majority.add(new ArrayList<Integer>());
                     p0 = false;
                     start_range = i+1;
@@ -365,7 +365,7 @@ public class Task extends AsyncTask<Void, String, Void> {
 
             Log.d("SINK2", "Phase 7.");
         }
-//        Log.d("SINK2", "Phase 7.");
+        publishProgress("", "", "", String.valueOf(this.majority.size()));
 
         return null;
     }
@@ -386,7 +386,7 @@ public class Task extends AsyncTask<Void, String, Void> {
         EditText editText3 = ll.findViewById(R.id.editText3);
         TextView textView8 = ll.findViewById(R.id.textView8);
 
-        if (values.length > 1) {
+        if (values.length > 1 && !values[2].equals("")) {
             switch (Integer.parseInt(values[2])) {
                 case 6:
                     textView8.setTextColor(Color.MAGENTA);
@@ -412,8 +412,13 @@ public class Task extends AsyncTask<Void, String, Void> {
             textView8.setText("Sampled " + values[2] + " at timestamp " + values[1]);
         }
 
-        if (Integer.parseInt(values[0]) > 0)
+        if (!values[0].equals("") && Integer.parseInt(values[0]) > 0)
             editText3.append(String.valueOf(Character.toChars(Integer.parseInt(values[0]))[0]));
+
+        if (values.length == 4) {
+            textView8.setTextColor(Color.BLACK);
+            textView8.setText("Session read: " + values[3]);
+        }
     }
 
     private boolean usingManchesterEncoding() {

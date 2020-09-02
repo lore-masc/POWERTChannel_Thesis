@@ -136,7 +136,7 @@ public class PowertChannelManager {
                     publishProgress("Session " + (i+1) + " - Message sending...");
                     sendStreamBits(bits);
                     i++;
-                    if (i < iterations) {
+                    if (i < iterations && iterations > 1) {
                         publishProgress("Session " + (i) + " - Terminating...");
                         long wait_time = (usingManchesterEncoding()) ? 16*PowertChannelManager.TIME : 8*PowertChannelManager.TIME;
                         try {
@@ -154,8 +154,13 @@ public class PowertChannelManager {
             protected void onProgressUpdate(String... values) {
                 super.onProgressUpdate(values);
                 TextView textView10 = ll.findViewById(R.id.textView10);
-                if (values.length > 0)
-                    textView10.setText(values[0]);
+
+                if (values.length == 1) {
+                    if (!values[0].equals("")) {
+                        textView10.setText(values[0]);
+                        Toast.makeText(context.getApplicationContext(), values[0], Toast.LENGTH_SHORT).show();
+                    }
+                }
             }
 
             @Override

@@ -19,36 +19,36 @@ The following tests have been executed in a virtual environment. The Manchester 
 |1|LI|1000|100%|100%|
 |1|LI|500|100%|100%|
 |1|LI|300|100%|100%|
-|1|LI|200|100%|100%|
-|1|LI|100|100%|100%|
-|1|LI|50|88%|92%|
+|1|LI|200|100%|92% [100%]<sub>3</sub>|
+|1|LI|100|97% [100%]<sub>3</sub>|87% [88%]<sub>3</sub> [92%]<sub>5</sub>|
+|1|LI|50|93% [89%]<sub>3</sub> [94%]<sub>5</sub>|85% [78%]<sub>3</sub> [81%]<sub>5</sub>|
 
 |Sink|Source|Time for a bit (ms)|(Standard code) Accuracy|(Manchester code) Accuracy|
 |--|--|--|--|--|
-|2|LI|1000|100%|92%|
-|2|LI|500|100%|92%|
-|2|LI|300|98%|92%|
-|2|LI|200|97%|92%|
-|2|LI|100|91%|88%|
-|2|LI|50|88%|78%|
+|2|LI|1000|100%|100%|
+|2|LI|500|100%|100%|
+|2|LI|300|98% [99%]<sub>3</sub> [100%]<sub>5</sub>|100%|
+|2|LI|200|97% [100%]<sub>3</sub>|100%|
+|2|LI|100|91% [94%]<sub>3</sub> [94%]<sub>5</sub>|84% [94%]<sub>3</sub> [84%]<sub>5</sub>|
+|2|LI|50|88% [81%]<sub>3</sub> [?%]<sub>5</sub>|78% [68%]<sub>3</sub> [70%]<sub>5</sub>|
 
 |Sink|Source|Time for a bit (ms)|(Standard code) Accuracy|(Manchester code) Accuracy|
 |--|--|--|--|--|
-|1|HL|1000|100%|98%|
-|1|HL|500|100%|88%|
-|1|HL|300|100%|90%|
-|1|HL|200|98%|90%|
-|1|HL|100|81%|86%|
+|1|HL|1000|100%|100%|
+|1|HL|500|100%|100%|
+|1|HL|300|100%|100%|
+|1|HL|200|90% [89%]<sub>3</sub> [91%]<sub>5</sub>|100%|
+|1|HL|100|81% [88%]<sub>3</sub> [88%]<sub>5</sub>|86% [89%]<sub>3</sub> [91%]<sub>5</sub>|
 |1|HL|50|84%|92%|
 
 |Sink|Source|Time for a bit (ms)|(Standard code) Accuracy|(Manchester code) Accuracy|
 |--|--|--|--|--|
-|2|HL|1000|96%|92%|
-|2|HL|500|94%|87%|
-|2|HL|300|92%|91%|
-|2|HL|200|92%|92%|
-|2|HL|100|88%|86%|
-|2|HL|50|71%|85%|
+|2|HL|1000|96% [93%]<sub>3</sub>|100%|
+|2|HL|500|94% [100%]<sub>3</sub>|100%|
+|2|HL|300|92% [91%]<sub>3</sub> [88%]<sub>5</sub>|96% [100%]<sub>3</sub>|
+|2|HL|200|92% [91%]<sub>3</sub> [95%]<sub>5</sub>|96% [87%]<sub>3</sub> [87%]<sub>5</sub>|
+|2|HL|100|88% [83%]<sub>3</sub> [88%]<sub>5</sub>|86% [89%]<sub>3</sub> [?%]<sub>5</sub>|
+|2|HL|50|71%|78%|
 
 ## Results on 256 bits
 
