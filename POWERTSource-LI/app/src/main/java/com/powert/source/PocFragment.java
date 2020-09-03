@@ -39,6 +39,7 @@ public class PocFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         this.ll = (LinearLayout) inflater.inflate(R.layout.poc_fragment, container, false);
+        final EditText editText5 = ll.findViewById(R.id.editText5);
 
         try {
             final PowertChannelManager powertChannelManager = new PowertChannelManager(ll, getContext());
@@ -144,6 +145,38 @@ public class PocFragment extends Fragment {
                     task.execute();
                 }
             });
+
+            Button button4 = ll.findViewById(R.id.button4);
+            button4.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    powertChannelManager.interrupt();
+                }
+            });
+
+            final EditText editTextNumber3 = ll.findViewById(R.id.editTextNumber3);
+            TextWatcher textWatcher1 = new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+                @Override
+                public void afterTextChanged(Editable s) {
+                    int size;
+                    try {
+                        size = Integer.parseInt(editTextNumber3.getText().toString());
+                    } catch (NumberFormatException e) {
+                        size = 40;
+                    }
+                    powertChannelManager.setLongStreamSize(size);
+                    editText5.setText(editText5.getText()); // trigger to update estimated time label
+                }
+            };
+
+            editTextNumber3.addTextChangedListener(textWatcher1);
+
         } catch (IOException e) {
             e.printStackTrace();
             String message = "Error reading assets during models opening";
@@ -204,8 +237,6 @@ public class PocFragment extends Fragment {
                 textView8.setText("Estimated time for single session: " + standard_time_required + "ms (Man: " + manchester_time_required  + "ms)");
             }
         };
-
-        final EditText editText5 = ll.findViewById(R.id.editText5);
         editText5.addTextChangedListener(textWatcher);
 
         final EditText editTextNumber = ll.findViewById(R.id.editTextNumber);

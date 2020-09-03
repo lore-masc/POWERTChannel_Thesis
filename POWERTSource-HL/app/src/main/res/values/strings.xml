@@ -31,8 +31,11 @@
     <string name="standard">Standard\n encoding</string>
     <string name="random">Random</string>
     <string name="time">Time for a bit </string>
+    <string name="bitsynch">Bit for synchronization </string>
     <string name="startwait">100</string>
     <string name="startrandom">6</string>
+    <string name="longstream">40</string>
     <string name="manchester">Manchester\n encoding</string>
     <string name="encoding">Message encoding </string>
+    <string name="stop">Stop</string>
 </resources>

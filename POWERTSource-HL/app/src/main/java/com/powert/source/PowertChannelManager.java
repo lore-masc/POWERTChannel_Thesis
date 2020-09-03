@@ -17,22 +17,32 @@ public class PowertChannelManager {
     private ModuleForwarder moduleForwarder;
     private Context context;
     private boolean manchester;
-    public static final int LONG_STREAM_SIZE = 40;
+    public static int LONG_STREAM_SIZE = 40;
     public static final int PREAMBLE_SIZE = 5;
     public static long TIME = 500;                   // [ms]
     private static int count = 0;
+    private boolean running;
 
     PowertChannelManager(LinearLayout ll, Context context) throws IOException {
         this.ll = ll;
         this.context = context;
         this.moduleForwarder = new ModuleForwarder(context);
         this.manchester = false;
+        this.running = false;
+
         float[] input = new float[40 * 32];
 
         Random random = new Random();
         for(int i = 0; i < input.length; i++)
             input[i] = random.nextFloat() * 100 - 200;
         this.moduleForwarder.prepare(input);
+    }
+
+    /**
+     * Interrupt the session.
+     */
+    public void interrupt() {
+        this.running = false;
     }
 
     /**
@@ -77,7 +87,7 @@ public class PowertChannelManager {
      */
     private void sendStreamBits(int bits[]) {
         android.os.Process.setThreadPriority(Process.THREAD_PRIORITY_FOREGROUND);
-        for(int i = 0; i < bits.length; i++) {
+        for(int i = 0; i < bits.length && this.running; i++) {
             long p1 = System.currentTimeMillis();
             if (bits[i] == 1) {
                 this.sendBit1();
@@ -98,7 +108,7 @@ public class PowertChannelManager {
     private void sendLongStream () {
         int[] longStream = new int[PowertChannelManager.LONG_STREAM_SIZE];
 
-        for (int i = 0; i < longStream.length; i++)
+        for (int i = 0; i < longStream.length && this.running; i++)
             if (i % 2 == 0)
                 longStream[i] = 0;
             else
@@ -115,12 +125,19 @@ public class PowertChannelManager {
     }
 
     /**
+     * Set number of bit in long stream.
+     * @param size number of bits.
+     */
+    public void setLongStreamSize (int size) { LONG_STREAM_SIZE = size; }
+
+    /**
      * Send a message converting the passed string into a binary encode.
      * The package will be composed with a long bit stream and a short preamble.
      * @param message String of message to send.
      * @param encode_type type of encoding to convert.
      */
     void sendPackage(String message, PocFragment.ENCODE_TYPE encode_type, final int sessions) {
+        this.running = true;
         final int[] bits = (encode_type == PocFragment.ENCODE_TYPE.CHARACTER) ? stringToBitArray(message) : bitsToBitArray(message);
 
         @SuppressLint("StaticFieldLeak") final AsyncTask<Void, String, Void> asyncTask = new AsyncTask<Void, String, Void>() {
@@ -145,7 +162,7 @@ public class PowertChannelManager {
                             e.printStackTrace();
                         }
                     }
-                } while (i < iterations);
+                } while (i < iterations && running);
                 publishProgress("Done.");
                 return null;
             }
