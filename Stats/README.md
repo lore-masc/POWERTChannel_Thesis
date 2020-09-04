@@ -16,62 +16,62 @@ The following tests have been executed in a virtual environment. The Manchester 
 
 |Sink|Source|Time for a bit (ms)|(Standard code) Accuracy|(Manchester code) Accuracy|
 |--|--|--|--|--|
-|1|LI|1000|100%|100%|
-|1|LI|500|100%|100%|
-|1|LI|300|100%|100%|
-|1|LI|200|100%|92% [100%]<sub>3</sub>|
-|1|LI|100|97% [100%]<sub>3</sub>|87% [88%]<sub>3</sub> [92%]<sub>5</sub>|
-|1|LI|50|93% [89%]<sub>3</sub> [94%]<sub>5</sub>|85% [78%]<sub>3</sub> [81%]<sub>5</sub>|
+|Online|LI|1000|100%|100%|
+|Online|LI|500|100%|100%|
+|Online|LI|300|100%|100%|
+|Online|LI|200|100%|92% [100%]<sub>3</sub>|
+|Online|LI|100|97% [100%]<sub>3</sub>|87% [88%]<sub>3</sub> [92%]<sub>5</sub>|
+|Online|LI|50|93% [89%]<sub>3</sub> [94%]<sub>5</sub>|85% [78%]<sub>3</sub> [81%]<sub>5</sub>|
 
 |Sink|Source|Time for a bit (ms)|(Standard code) Accuracy|(Manchester code) Accuracy|
 |--|--|--|--|--|
-|2|LI|1000|100%|100%|
-|2|LI|500|100%|100%|
-|2|LI|300|98% [99%]<sub>3</sub> [100%]<sub>5</sub>|100%|
-|2|LI|200|97% [100%]<sub>3</sub>|100%|
-|2|LI|100|91% [94%]<sub>3</sub> [94%]<sub>5</sub>|84% [94%]<sub>3</sub> [84%]<sub>5</sub>|
-|2|LI|50|88% [81%]<sub>3</sub> [?%]<sub>5</sub>|78% [68%]<sub>3</sub> [70%]<sub>5</sub>|
+|Offline|LI|1000|100%|100%|
+|Offline|LI|500|100%|100%|
+|Offline|LI|300|98% [99%]<sub>3</sub> [100%]<sub>5</sub>|100%|
+|Offline|LI|200|97% [100%]<sub>3</sub>|100%|
+|Offline|LI|100|91% [94%]<sub>3</sub> [94%]<sub>5</sub>|84% [94%]<sub>3</sub> [84%]<sub>5</sub>|
+|Offline|LI|50|88% [81%]<sub>3</sub>|78% [68%]<sub>3</sub> [70%]<sub>5</sub>|
 
 |Sink|Source|Time for a bit (ms)|(Standard code) Accuracy|(Manchester code) Accuracy|
 |--|--|--|--|--|
-|1|HL|1000|100%|100%|
-|1|HL|500|100%|100%|
-|1|HL|300|100%|100%|
-|1|HL|200|90% [89%]<sub>3</sub> [91%]<sub>5</sub>|100%|
-|1|HL|100|81% [88%]<sub>3</sub> [88%]<sub>5</sub>|86% [89%]<sub>3</sub> [91%]<sub>5</sub>|
-|1|HL|50|84%|92%|
+|Online|HL|1000|100%|100%|
+|Online|HL|500|100%|100%|
+|Online|HL|300|100%|100%|
+|Online|HL|200|90% [89%]<sub>3</sub> [91%]<sub>5</sub>|100%|
+|Online|HL|100|81% [88%]<sub>3</sub> [88%]<sub>5</sub>|86% [89%]<sub>3</sub> [91%]<sub>5</sub>|
+|Online|HL|50|84%|92%|
 
 |Sink|Source|Time for a bit (ms)|(Standard code) Accuracy|(Manchester code) Accuracy|
 |--|--|--|--|--|
-|2|HL|1000|96% [93%]<sub>3</sub>|100%|
-|2|HL|500|94% [100%]<sub>3</sub>|100%|
-|2|HL|300|92% [91%]<sub>3</sub> [88%]<sub>5</sub>|96% [100%]<sub>3</sub>|
-|2|HL|200|92% [91%]<sub>3</sub> [95%]<sub>5</sub>|96% [87%]<sub>3</sub> [87%]<sub>5</sub>|
-|2|HL|100|88% [83%]<sub>3</sub> [88%]<sub>5</sub>|86% [89%]<sub>3</sub> [?%]<sub>5</sub>|
-|2|HL|50|71%|78%|
+|Offline|HL|1000|96% [93%]<sub>3</sub>|100%|
+|Offline|HL|500|94% [100%]<sub>3</sub>|100%|
+|Offline|HL|300|92% [91%]<sub>3</sub> [88%]<sub>5</sub>|96% [100%]<sub>3</sub>|
+|Offline|HL|200|92% [91%]<sub>3</sub> [95%]<sub>5</sub>|96% [87%]<sub>3</sub> [87%]<sub>5</sub>|
+|Offline|HL|100|88% [83%]<sub>3</sub> [88%]<sub>5</sub>|86% [89%]<sub>3</sub> [85%]<sub>5</sub>|
+|Offline|HL|50|71%|78%|
 
 ## Results on 256 bits
 
 |Sink|Source|Time for a bit (ms)|(Standard code) Accuracy|(Manchester code) Accuracy|
 |--|--|--|--|--|
-|1|LI|200|100%|94%|
-|1|LI|100|91%|89%|
-|1|LI|50|89%|84%|
+|Online|LI|200|100%|94% [100%]<sub>3</sub>|
+|Online|LI|100|91% [92%]<sub>3</sub> [93%]<sub>5</sub>|89% [90%]<sub>3</sub> [90%]<sub>5</sub>|
+|Online|LI|50|89% [91%]<sub>3</sub> [89%]<sub>5</sub>|84% [80%]<sub>3</sub> [79%]<sub>5</sub>|
 
 |Sink|Source|Time for a bit (ms)|(Standard code) Accuracy|(Manchester code) Accuracy|
 |--|--|--|--|--|
-|2|LI|200|91%|92%|
-|2|LI|100|88%|93%|
-|2|LI|50|77%|82%|
+|Offline|LI|200|91% [94%]<sub>3</sub> [93%]<sub>5</sub>|100%|
+|Offline|LI|100|88% [85%]<sub>3</sub> [89%]<sub>5</sub>|86% [85%]<sub>3</sub> [91%]<sub>5</sub>|
+|Offline|LI|50|77% [86%]<sub>3</sub> [83%]<sub>5</sub>|81% [78%]<sub>3</sub> [75%]<sub>5</sub>|
 
 |Sink|Source|Time for a bit (ms)|(Standard code) Accuracy|(Manchester code) Accuracy|
 |--|--|--|--|--|
-|1|HL|200|90%|93%|
-|1|HL|100|87%|89%|
-|1|HL|50|77%|91%|
+|Online|HL|200|90% [89%]<sub>3</sub> [91%]<sub>5</sub>|93% [90%]<sub>3</sub> [91%]<sub>5</sub>|
+|Online|HL|100|87% [87%]<sub>3</sub> [88%]<sub>5</sub>|89% [87%]<sub>3</sub> [90%]<sub>5</sub>|
+|Online|HL|50|77% [85%]<sub>3</sub> [76%]<sub>5</sub>|91% [87%]<sub>3</sub>|
 
 |Sink|Source|Time for a bit (ms)|(Standard code) Accuracy|(Manchester code) Accuracy|
 |--|--|--|--|--|
-|2|HL|200|90%|88%|
-|2|HL|100|88%|90%|
-|2|HL|50|88%|82%|
+|Offline|HL|200|90% [90%]<sub>3</sub> [88%]<sub>5</sub>|88% [96%]<sub>3</sub> [96%]<sub>5</sub>|
+|Offline|HL|100|88% [88%]<sub>3</sub> [88%]<sub>5</sub>|88% [90%]<sub>3</sub> [90%]<sub>5</sub>|
+|Offline|HL|50|88% [83%]<sub>3</sub> [72%]<sub>5</sub>|87% [88%]<sub>3</sub> [86%]<sub>5</sub>|
