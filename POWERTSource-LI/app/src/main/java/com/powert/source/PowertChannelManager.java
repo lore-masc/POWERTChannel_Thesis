@@ -3,13 +3,17 @@ package com.powert.source;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.AsyncTask;
+import android.os.Environment;
 import android.os.Process;
 import android.util.Log;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -22,7 +26,8 @@ public class PowertChannelManager {
     public static final int PREAMBLE_SIZE = 5;
     public static long TIME = 500;                   // [ms]
     ArrayList<Long> logTimestamps;
-    ArrayList<Integer> logBits;
+    ArrayList<Integer> logManchesterBits;
+    ArrayList<Integer> logStandardBits;
     private boolean running;
 
     PowertChannelManager(LinearLayout ll, Context context) throws IOException {
@@ -52,7 +57,7 @@ public class PowertChannelManager {
      */
     private void sendBit0() {
         this.logTimestamps.add(System.currentTimeMillis());
-        this.logBits.add(0);
+        this.logManchesterBits.add(0);
         try {
             Thread.sleep(PowertChannelManager.TIME);
         } catch (InterruptedException e) {
@@ -65,7 +70,7 @@ public class PowertChannelManager {
      */
     private void sendBit1() {
         this.logTimestamps.add(System.currentTimeMillis());
-        this.logBits.add(1);
+        this.logManchesterBits.add(1);
         long p1 = System.currentTimeMillis();
         while (System.currentTimeMillis() < p1 + PowertChannelManager.TIME) {
 //            long start = System.currentTimeMillis();
@@ -84,10 +89,12 @@ public class PowertChannelManager {
         for(int i = 0; i < bits.length && this.running; i++) {
             long p1 = System.currentTimeMillis();
             if (bits[i] == 1) {
+                this.logStandardBits.add(1);
                 this.sendBit1();
                 if (this.usingManchesterEncoding())
                     this.sendBit0();
             } else {
+                this.logStandardBits.add(0);
                 this.sendBit0();
                 if (this.usingManchesterEncoding())
                     this.sendBit1();
@@ -149,7 +156,8 @@ public class PowertChannelManager {
      */
     void sendPackage(String message, PocFragment.ENCODE_TYPE encode_type, final int sessions) {
         this.logTimestamps = new ArrayList<>();
-        this.logBits = new ArrayList<>();
+        this.logManchesterBits = new ArrayList<>();
+        this.logStandardBits = new ArrayList<>();
         this.running = true;
 
         final int[] bits = (encode_type == PocFragment.ENCODE_TYPE.CHARACTER) ? stringToBitArray(message) : bitsToBitArray(message);
@@ -198,6 +206,12 @@ public class PowertChannelManager {
             protected void onPostExecute(Void aVoid) {
                 super.onPostExecute(aVoid);
                 Toast.makeText(context, "Message sent", Toast.LENGTH_SHORT).show();
+
+                try {
+                    exportLogs(Environment.getExternalStorageDirectory().getAbsolutePath()+"/Source-LI.csv");
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         };
         asyncTask.execute();
@@ -239,6 +253,29 @@ public class PowertChannelManager {
             if (chars[i] == '0') bits[i] = 0;
             else bits[i] = 1;
         return bits;
+    }
+
+
+    /**
+     * Export csv file for external analysis.
+     * @param FILE_PATH Path of the exported file.
+     * @throws IOException
+     */
+    private void exportLogs(final String FILE_PATH) throws IOException {
+        File file = new File(FILE_PATH);
+        if (file.exists())
+            file.delete();
+        FileOutputStream fileOutputStream = new FileOutputStream(file, true);
+        OutputStreamWriter writer = new OutputStreamWriter(fileOutputStream);
+        String header = "Timestamps, Manchester bits, Standard bits\n";
+        writer.write(header);
+
+        for (int i = 0; i < this.logTimestamps.size(); i++) {
+            writer.write(this.logTimestamps.get(i) + ", " + this.logManchesterBits.get(i) + ", " + this.logStandardBits.get((this.manchester) ? i/2 : i));
+            writer.write("\n");
+        }
+        writer.close();
+        fileOutputStream.close();
     }
 
 }

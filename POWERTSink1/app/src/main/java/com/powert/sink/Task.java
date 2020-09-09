@@ -5,6 +5,7 @@ import android.content.Context;
 import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Build;
+import android.os.Environment;
 import android.util.Log;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -12,6 +13,11 @@ import android.widget.TextView;
 
 import androidx.annotation.RequiresApi;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 
 public class Task extends AsyncTask<Void, String, Void> {
@@ -25,6 +31,10 @@ public class Task extends AsyncTask<Void, String, Void> {
     private static float overhead_workload;
     private static int average_size;
     private boolean manchester;
+    private ArrayList<Long> logTimestamps;
+    private ArrayList<Integer> logBits;
+    private ArrayList<Float> logSamples;
+    private ArrayList<Float> logAverages;
     private ArrayList<Integer> bits;
     private ArrayList< ArrayList<Integer> > majority;
     private int current_session, current_position;
@@ -72,10 +82,12 @@ public class Task extends AsyncTask<Void, String, Void> {
         long consecutive_bits;
         this.bits = new ArrayList<>();
         ArrayList<Float> samples = new ArrayList<>();
-        ArrayList<Long> logTimestamps = new ArrayList<>();
-        ArrayList<Float> logSamples = new ArrayList<>();
-        ArrayList<Integer> logBits = new ArrayList<>();
         ArrayList<Float> averages = new ArrayList<>();
+
+        this.logTimestamps = new ArrayList<>();
+        this.logSamples = new ArrayList<>();
+        this.logBits = new ArrayList<>();
+        this.logAverages = new ArrayList<>();
         this.majority = new ArrayList<>();
         this.majority.add(new ArrayList<Integer>());
         this.current_session = 0;
@@ -84,6 +96,8 @@ public class Task extends AsyncTask<Void, String, Void> {
         if (this.usingManchesterEncoding()) {
             long last_measure = 0;
             int count = 0;
+//            float sum = 0;
+//            boolean was_positive = true;
 
             while (this.isRecording()) {
                 Log.d("SINK", "" + bits);
@@ -94,6 +108,7 @@ public class Task extends AsyncTask<Void, String, Void> {
                     sampled_workload = Math.max(0, Utils.readCore(READ_CORES) - overhead_workload);
                     if (start && sampled_workload >= PEAK) {
 //                    Log.d("SINK", "MEASURED: " + sampled_workload);
+                        last_measure = System.currentTimeMillis();
                         start = false;
                     }
                 } while (start && this.isRecording());
@@ -112,10 +127,16 @@ public class Task extends AsyncTask<Void, String, Void> {
 
                         long now = System.currentTimeMillis();
 
-                        logTimestamps.add(now);
-                        logSamples.add(sampled_workload);
+                        this.logAverages.add(actual_av);
+                        this.logTimestamps.add(now);
+                        this.logSamples.add(sampled_workload);
 
                         float percent_time = (now - last_measure) / (2.0f * wait);
+
+//                        if ((was_positive && actual_diff < 0) || (!was_positive && actual_diff >= 0))    sum = 0;
+//                        was_positive = actual_diff >= 0;
+//                        sum += actual_diff;
+
                         if (percent_time >= 0.84f) {
     //                        Log.d("SINK", "Time: " + (now - last_measure) / (2.0*wait) + " - Diff: " + actual_diff + " - " +  Math.abs(actual_diff) + " >= " + bit_threshold + "? " + (Math.abs(actual_diff) >= bit_threshold) + " *");
                             if (Math.abs(actual_diff) >= bit_threshold)
@@ -125,7 +146,7 @@ public class Task extends AsyncTask<Void, String, Void> {
 
                             if (actual_diff >= bit_threshold) {
                                 bits.add(0);
-                                logBits.add(0);
+                                this.logBits.add(0);
                                 last_measure = now;
                                 if (synchronization) {
                                     count++;
@@ -137,13 +158,13 @@ public class Task extends AsyncTask<Void, String, Void> {
                                 }
                             } else if (actual_diff <= -bit_threshold) {
                                 bits.add(1);
-                                logBits.add(1);
+                                this.logBits.add(1);
                                 last_measure = now;
                                 if (synchronization) {
                                     count = 0;
                                 }
                             } else {
-                                logBits.add(-1);
+                                this.logBits.add(-1);
                                 // end session
                                 if (!synchronization && percent_time >= 7f) {
                                     // Return last bits
@@ -168,9 +189,11 @@ public class Task extends AsyncTask<Void, String, Void> {
                                 }
                             }
                         } else {
-                            logBits.add(-1);
+                            this.logBits.add(-1);
                             Log.d("SINK", "Time: " + (now - last_measure) / (2.0 * wait) + " - Diff: " + actual_diff);
                         }
+                    } else {
+                        this.logBits.add(-1);
                     }
 
                     // get message
@@ -201,8 +224,6 @@ public class Task extends AsyncTask<Void, String, Void> {
                     }
                 } while (start && this.isRecording());
                 samples.add(sampled_workload);
-                logSamples.add(sampled_workload);
-                logTimestamps.add(System.currentTimeMillis());
 
                 long last_measure = System.currentTimeMillis();
 
@@ -210,6 +231,9 @@ public class Task extends AsyncTask<Void, String, Void> {
                     samples.remove(0);
                     float actual_workload = weightedAverageArray(samples);
                     averages.add(actual_workload);
+                    this.logSamples.add(sampled_workload);
+                    this.logTimestamps.add(System.currentTimeMillis());
+                    this.logAverages.add(actual_workload);
 
                     publishProgress(mode, String.valueOf(actual_workload), "", "");
 
@@ -242,17 +266,17 @@ public class Task extends AsyncTask<Void, String, Void> {
 //                            Log.d("SINK", "current_session: " + current_session + "; size majority: " + majority.size());
                             publishProgress(mode, String.valueOf(actual_workload), "-1", "");
                         }
-                        logBits.add(1);
+                        this.logBits.add(1);
                         zero_bit = false;
                     } else if (actual_workload < bit_threshold && !zero_bit) {
                         consecutive_bits = Math.max(1, Math.round((last_measure - start_range) / (wait * 1.0f)));
 //                    Log.d("SINK", "Entrato nello 0 dopo " + (last_measure - start_range) + " ms = " + Math.round((last_measure - start_range) / (wait * 1.0f)));
                         start_range = System.currentTimeMillis();
                         for (int i = 0; i < consecutive_bits; i++) bits.add(1);
-                        logBits.add(1);
+                        this.logBits.add(1);
                         zero_bit = true;
                     } else {
-                        logBits.add(0);
+                        this.logBits.add(0);
                     }
 
                     // get message
@@ -262,8 +286,14 @@ public class Task extends AsyncTask<Void, String, Void> {
                         publishProgress(mode, String.valueOf(actual_workload), String.valueOf(dec), "");
                     } else if (!synchronization && Math.round((last_measure - start_range) / (wait * 1.0f)) > BYTE + (BYTE - bits.size())) {
                         // corner case of remaining zero-bits
-                        for (int i = 0; i < BYTE - bits.size(); i++) bits.add(0);
+                        for (int i = 0; i < BYTE - bits.size(); i++) {
+                            bits.add(0);
+                            this.logBits.add(0);
+                        }
                     }
+                } else {
+                    this.logBits.add(0);
+                    this.logAverages.add(0f);
                 }
 
             }
@@ -280,6 +310,28 @@ public class Task extends AsyncTask<Void, String, Void> {
     @Override
     protected void onPostExecute(Void v) {
         super.onPostExecute(v);
+        File file = new File(Environment.getExternalStorageDirectory().getAbsolutePath()+"/Sink1.csv");
+        if (file.exists())
+            file.delete();
+        FileOutputStream fileOutputStream;
+        try {
+            fileOutputStream = new FileOutputStream(file, true);
+            OutputStreamWriter writer = new OutputStreamWriter(fileOutputStream);
+            String header = "Timestamps, samplings, average, bits\n";
+            writer.write(header);
+
+            for (int i = 0; i < this.logTimestamps.size(); i++) {
+                writer.write(this.logTimestamps.get(i) + ", " +  this.logSamples.get(i) + ", " + this.logAverages.get(i) + ", " + this.logBits.get(i));
+                writer.write("\n");
+            }
+            writer.close();
+            fileOutputStream.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
     }
 
     @Override
@@ -328,7 +380,7 @@ public class Task extends AsyncTask<Void, String, Void> {
 
     void useManchesterEncoding (boolean enable) {
         this.manchester = enable;
-        this.bit_threshold = (this.usingManchesterEncoding()) ? 0.2f : 0.46f;
+        this.bit_threshold = (this.usingManchesterEncoding()) ? 0.18f : 0.46f;
     }
 
     private static float weightedAverageArray(ArrayList<Float> arr) {
