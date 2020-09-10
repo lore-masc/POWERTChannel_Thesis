@@ -8,11 +8,13 @@ Exploiting Power Management Vulnerabilities*](https://ieeexplore.ieee.org/docume
 
 ## Steps
 
-- **Resources consuption**. Training and preparation of two model versions. 
+- **Network models in PyTorch**. Training and preparation of two model versions. 
 - **Source-LI Android app**. Developing an app works as a sender of the bitstream using the quantized network (L) and Idle state.
 - **Source-HL Android app**. Developing an app works as a sender of the bitstream using the normal (H) and the quantized (L) networks.
 - **Sink1 Android app**. Developing an app in order to retrieve and decode bits using the CPU workload. It operates in an Online mode.
 - **Sink2 Android app**. Developing an app in order to retrieve and decode bits using the FP unit running the first layer of the normal network. It operates in an Offline mode.
+- **Noiser Android app**. Developing an app in order to detect and run proposal mitigations.
+- **Dynamical worksheet for plotting data**. Excel files with a macro to auto plot exported data from Sources and Sinks.
 
 ## Author
 [Lorenzo Masciullo](https://www.linkedin.com/in/lorenzo-masciullo-b963b1114/).
