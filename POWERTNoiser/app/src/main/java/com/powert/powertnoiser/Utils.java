@@ -153,4 +153,57 @@ public class Utils {
 
         return perc/100f;
     }
+
+    static String topPackageName() {
+        Process process;
+        String name = null;
+        try {
+            process = Runtime.getRuntime().exec("top -n 1 -d 1 -m 1");
+            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            int read;
+            char[] buffer = new char[4096];
+            StringBuffer output = new StringBuffer();
+            output.append(buffer, 0, bufferedReader.read(buffer));
+            bufferedReader.close();
+
+            name = output.toString().split("\n")[7].split("  ")[6].replace(" ","");
+        } catch (IOException e) {
+//            e.printStackTrace();
+        }
+        return name;
+    }
+
+    static int topPID() {
+        Process process;
+        int pid = -1;
+        try {
+            process = Runtime.getRuntime().exec("top -n 1 -d 1 -m 1");
+            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            int read;
+            char[] buffer = new char[4096];
+            StringBuffer output = new StringBuffer();
+            output.append(buffer, 0, bufferedReader.read(buffer));
+            bufferedReader.close();
+
+            pid = Integer.parseInt(output.toString().split("\n")[7].split("  ")[0].replace(" ",""));
+        } catch (IOException e) {
+//            e.printStackTrace();
+        }
+
+        return pid;
+    }
+
+    static void reniceTop() {
+        int pid = topPID();
+        if (pid > 0) {
+            try {
+                Log.d("RENICE", "renice +20 " + pid);
+                Long start = System.currentTimeMillis();
+                while (System.currentTimeMillis() - start < 1000)
+                    Runtime.getRuntime().exec("renice +20 " + pid);
+            } catch (IOException e) {
+//            e.printStackTrace();
+            }
+        }
+    }
 }

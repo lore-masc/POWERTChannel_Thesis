@@ -1,5 +1,8 @@
 <resources>
     <string name="app_name">POWERT Noiser</string>
     <string name="detection">DETECTION</string>
-
+    <string name="reaction">POSSIBLE MITIGATIONS</string>
+    <string name="start">Autostart</string>
+    <string name="option1">Random noise</string>
+    <string name="option2">Renice suspicious thread (root)</string>
 </resources>

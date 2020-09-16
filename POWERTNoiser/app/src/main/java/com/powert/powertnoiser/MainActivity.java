@@ -3,12 +3,20 @@ package com.powert.powertnoiser;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.annotation.SuppressLint;
+import android.app.ActivityManager;
+import android.app.Application;
+import android.content.Context;
+import android.content.pm.PackageManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Process;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageButton;
+import android.widget.RadioButton;
+import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -17,6 +25,7 @@ public class MainActivity extends AppCompatActivity {
 
     private static final long READ_CORES = 20;
     private static final float ALARM_THRESHOLD = 0.6f;
+    private static int INITIAL_THREADS;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,13 +38,15 @@ public class MainActivity extends AppCompatActivity {
 
         @SuppressLint("StaticFieldLeak")
         AsyncTask<Void, String, Void> cpu_usage = new AsyncTask<Void, String, Void>() {
-            @SuppressLint("StaticFieldLeak")
+            @SuppressLint({"StaticFieldLeak", "WrongThread"})
             @Override
             protected Void doInBackground(Void... voids) {
                 float sampled_workload;
                 float risk_index = 0;
                 float min;
                 boolean risk = false;
+
+                INITIAL_THREADS = Thread.activeCount();
 
                 publishProgress(String.valueOf(risk), String.valueOf(risk_index));
 
@@ -101,9 +112,10 @@ public class MainActivity extends AppCompatActivity {
                             }
                             risk_index = count / durations.size();
 
-                            if (risk_index >= 0.5f)
+                            if (risk_index >= 0.5f) {
 //                                Log.d("NOISER", "RISK DETECTED " + risk_index);
-                            publishProgress(String.valueOf(risk), String.valueOf(risk_index*100));
+                                publishProgress(String.valueOf(risk), String.valueOf(risk_index * 100));
+                            }
                         }
                     }
                     publishProgress(String.valueOf(risk), String.valueOf(risk_index*100));
@@ -117,11 +129,35 @@ public class MainActivity extends AppCompatActivity {
                 super.onProgressUpdate(values);
                 ImageButton imageButton = findViewById(R.id.imageButton);
                 TextView textView2 = findViewById(R.id.textView2);
+                @SuppressLint("UseSwitchCompatOrMaterialCode") Switch switch1 = findViewById(R.id.switch1);
+                RadioButton radioButton1 = findViewById(R.id.radioButton1);
+                RadioButton radioButton2 = findViewById(R.id.radioButton2);
                 boolean risk = Boolean.parseBoolean(values[0]);
 
-                if (risk)
+                if (risk && switch1.isChecked()) {
                     imageButton.setVisibility(View.VISIBLE);
-                else {
+
+                    if (radioButton1.isChecked()) {
+                        Thread thread = new Thread(new Runnable() {
+                            public void run() {
+                                Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
+                                Log.d("RANDOMNOISER", "START NOISER");
+                                Long start = System.currentTimeMillis();
+
+                                while (System.currentTimeMillis() - start < 5000) {
+                                    long result = 0;
+                                    for (double i = Math.pow(11, 7); i >= 0; i--) {
+                                        result += Math.atan(i) * Math.tan(i);
+                                    }
+                                }
+                            }
+                        });
+                        thread.start();
+                    } else if (radioButton2.isChecked()) {
+                        Utils.reniceTop();
+                    }
+//                    Log.d("NOISER", "THREAD STARTED");
+                } else {
                     imageButton.setVisibility(View.INVISIBLE);
                     values[1] = "0.00";
                 }
@@ -130,8 +166,6 @@ public class MainActivity extends AppCompatActivity {
 
             }
         }.execute();
-
-
     }
 
     private static void roundUp(ArrayList<Long> toRound) {

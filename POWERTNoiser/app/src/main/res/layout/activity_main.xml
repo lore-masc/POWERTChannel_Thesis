@@ -8,7 +8,7 @@
     tools:context=".MainActivity">
 
     <LinearLayout
-        android:layout_width="409dp"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="1dp"
         android:layout_marginTop="1dp"
@@ -51,6 +51,48 @@
                 android:layout_weight="1"
                 android:textColor="@android:color/black"
                 android:textSize="36sp" />
+
         </LinearLayout>
+
+        <Space
+            android:layout_width="100dp"
+            android:layout_height="30dp"
+            android:layout_weight="1" />
+
+        <TextView
+            android:id="@+id/textView3"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/reaction"
+            android:textAlignment="center"
+            android:textColor="@android:color/black" />
+
+        <RadioGroup
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <RadioButton
+                android:id="@+id/radioButton1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                android:text="@string/option1" />
+
+            <RadioButton
+                android:id="@+id/radioButton2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/option2" />
+
+        </RadioGroup>
+
+        <Switch
+            android:id="@+id/switch1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:checked="true"
+            android:text="@string/start" />
+
     </LinearLayout>
+
 </androidx.constraintlayout.widget.ConstraintLayout>
