@@ -57,6 +57,7 @@ public class PowertChannelManager {
      * Send a single zero bit.
      */
     private void sendBit0() {
+        this.logTimestamps.add(System.currentTimeMillis());
         this.logManchesterBits.add(0);
         long p1 = System.currentTimeMillis();
         for (int c = 0; c < count && System.currentTimeMillis() < p1 + PowertChannelManager.TIME; c++) {
@@ -80,6 +81,7 @@ public class PowertChannelManager {
      * Send a single one bit.
      */
     private void sendBit1() {
+        this.logTimestamps.add(System.currentTimeMillis());
         this.logManchesterBits.add(1);
         long p1 = System.currentTimeMillis();
         count = 0;

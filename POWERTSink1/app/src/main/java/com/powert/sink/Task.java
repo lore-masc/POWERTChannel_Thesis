@@ -105,8 +105,8 @@ public class Task extends AsyncTask<Void, String, Void> {
 
                 // waiting first peak
                 do {
-                    sampled_workload = Math.max(0, Utils.readCore(READ_CORES) - overhead_workload);
-                    if (start && sampled_workload >= PEAK) {
+                    sampled_workload = Math.max(0, Utils.readCore(READ_CORES));
+                    if (start && sampled_workload - overhead_workload >= PEAK) {
 //                    Log.d("SINK", "MEASURED: " + sampled_workload);
                         last_measure = System.currentTimeMillis();
                         start = false;
@@ -216,8 +216,8 @@ public class Task extends AsyncTask<Void, String, Void> {
 
                 // waiting first peak
                 do {
-                    sampled_workload = Math.max(0, Utils.readCore(READ_CORES) - overhead_workload);
-                    if (start && sampled_workload >= PEAK) {
+                    sampled_workload = Math.max(0, Utils.readCore(READ_CORES));
+                    if (start && sampled_workload - overhead_workload >= PEAK) {
 //                    Log.d("SINK", "MEASURED: " + sampled_workload);
                         start = false;
                         start_range = System.currentTimeMillis();
@@ -266,7 +266,7 @@ public class Task extends AsyncTask<Void, String, Void> {
 //                            Log.d("SINK", "current_session: " + current_session + "; size majority: " + majority.size());
                             publishProgress(mode, String.valueOf(actual_workload), "-1", "");
                         }
-                        this.logBits.add(1);
+                        this.logBits.add(0);
                         zero_bit = false;
                     } else if (actual_workload < bit_threshold && !zero_bit) {
                         consecutive_bits = Math.max(1, Math.round((last_measure - start_range) / (wait * 1.0f)));
@@ -276,7 +276,7 @@ public class Task extends AsyncTask<Void, String, Void> {
                         this.logBits.add(1);
                         zero_bit = true;
                     } else {
-                        this.logBits.add(0);
+                        this.logBits.add(-1);
                     }
 
                     // get message
@@ -288,11 +288,10 @@ public class Task extends AsyncTask<Void, String, Void> {
                         // corner case of remaining zero-bits
                         for (int i = 0; i < BYTE - bits.size(); i++) {
                             bits.add(0);
-                            this.logBits.add(0);
                         }
                     }
                 } else {
-                    this.logBits.add(0);
+                    this.logBits.add(-1);
                     this.logAverages.add(0f);
                 }
 
