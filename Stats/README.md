@@ -61,7 +61,7 @@ The following tests have been executed in a virtual environment. The Manchester 
 
 |Sink|Source|Time for a bit (ms)|(Standard code) Accuracy|(Manchester code) Accuracy|
 |--|--|--|--|--|
-|Offline|LI|300|96% [94%]<sub>3</sub> [%]<sub>5</sub>|100%|
+|Offline|LI|300|96% [94%]<sub>3</sub> [95%]<sub>5</sub>|100%|
 |Offline|LI|200|91% [94%]<sub>3</sub> [93%]<sub>5</sub>|100%|
 |Offline|LI|100|88% [85%]<sub>3</sub> [89%]<sub>5</sub>|86% [85%]<sub>3</sub> [91%]<sub>5</sub>|
 |Offline|LI|50|77% [86%]<sub>3</sub> [83%]<sub>5</sub>|81% [78%]<sub>3</sub> [75%]<sub>5</sub>|
