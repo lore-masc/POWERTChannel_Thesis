@@ -38,15 +38,17 @@ public class MainActivity extends AppCompatActivity {
 
         @SuppressLint("StaticFieldLeak")
         AsyncTask<Void, String, Void> cpu_usage = new AsyncTask<Void, String, Void>() {
+            float min;
+
             @SuppressLint({"StaticFieldLeak", "WrongThread"})
             @Override
             protected Void doInBackground(Void... voids) {
                 float sampled_workload;
                 float risk_index = 0;
-                float min;
                 boolean risk = false;
 
-                INITIAL_THREADS = Thread.activeCount();
+                INITIAL_THREADS = Utils.currentRunnableThreads();
+                Log.d("NOISER", "THREAD INIZIALI: " + INITIAL_THREADS);
 
                 publishProgress(String.valueOf(risk), String.valueOf(risk_index));
 
@@ -55,6 +57,7 @@ public class MainActivity extends AppCompatActivity {
                     durations.clear();
 //                    timestamps.clear();
 //                    cpu.clear();
+                    publishProgress(String.valueOf(risk), String.valueOf(risk_index*100));
 
                     // Wait first peak
                     do {
@@ -113,7 +116,7 @@ public class MainActivity extends AppCompatActivity {
                             risk_index = count / durations.size();
 
                             if (risk_index >= 0.5f) {
-//                                Log.d("NOISER", "RISK DETECTED " + risk_index);
+                                Log.d("NOISER", "RISK DETECTED " + risk_index);
                                 publishProgress(String.valueOf(risk), String.valueOf(risk_index * 100));
                             }
                         }
@@ -134,27 +137,32 @@ public class MainActivity extends AppCompatActivity {
                 RadioButton radioButton2 = findViewById(R.id.radioButton2);
                 boolean risk = Boolean.parseBoolean(values[0]);
 
-                if (risk && switch1.isChecked()) {
+                textView2.setText(values[1].substring(0, values[1].indexOf(".")) + "%");
+
+                if (risk) {
                     imageButton.setVisibility(View.VISIBLE);
 
-                    if (radioButton1.isChecked()) {
-                        Thread thread = new Thread(new Runnable() {
-                            public void run() {
-                                Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
-                                Log.d("RANDOMNOISER", "START NOISER");
-                                Long start = System.currentTimeMillis();
+                    if (radioButton1.isChecked() && switch1.isChecked()) {
+                        Long start = System.currentTimeMillis();
+                        while (System.currentTimeMillis() - start < min * 20) {
+                            while (Utils.currentRunnableThreads() - INITIAL_THREADS <= 4) {
+                                Thread thread = new Thread(new Runnable() {
+                                    public void run() {
+                                        Log.d("RANDOMNOISER", "START NOISER for " + min * 20 + "ms");
+                                        long result = 0;
+                                        for (double i = Math.pow(9, 7); i >= 0; i--) {
+                                            Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
+                                            result += Math.atan(i) * Math.tan(i);
+                                        }
 
-                                while (System.currentTimeMillis() - start < 5000) {
-                                    long result = 0;
-                                    for (double i = Math.pow(11, 7); i >= 0; i--) {
-                                        result += Math.atan(i) * Math.tan(i);
                                     }
-                                }
+                                });
+                                thread.start();
                             }
-                        });
-                        thread.start();
-                    } else if (radioButton2.isChecked()) {
-                        Utils.reniceTop();
+                        }
+                        Log.d("NOISER", "THREAD CORRENT: " + Utils.currentRunnableThreads());
+                    } else if (radioButton2.isChecked() && switch1.isChecked()) {
+                        Utils.reniceTop(Math.round(min * 20));
                     }
 //                    Log.d("NOISER", "THREAD STARTED");
                 } else {
@@ -162,17 +170,16 @@ public class MainActivity extends AppCompatActivity {
                     values[1] = "0.00";
                 }
 
-                textView2.setText(values[1].substring(0, values[1].indexOf(".")) + "%");
-
             }
         }.execute();
     }
 
     private static void roundUp(ArrayList<Long> toRound) {
+        final int MULTIPLE = 50;
         for (int i = 0; i < toRound.size(); i++) {
             Long l = toRound.get(i);
-            if (l % 10 == 0)    toRound.set(i, l);
-            else toRound.set(i, (10 - l % 10) + l);
+            if (l % MULTIPLE == 0)    toRound.set(i, l);
+            else toRound.set(i, (MULTIPLE - l % MULTIPLE) + l);
         }
     }
 

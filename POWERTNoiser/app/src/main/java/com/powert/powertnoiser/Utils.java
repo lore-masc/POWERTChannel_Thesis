@@ -193,17 +193,25 @@ public class Utils {
         return pid;
     }
 
-    static void reniceTop() {
+    static void reniceTop(int time) {
         int pid = topPID();
         if (pid > 0) {
             try {
                 Log.d("RENICE", "renice +20 " + pid);
                 Long start = System.currentTimeMillis();
-                while (System.currentTimeMillis() - start < 1000)
+                while (System.currentTimeMillis() - start < time)
                     Runtime.getRuntime().exec("renice +20 " + pid);
             } catch (IOException e) {
 //            e.printStackTrace();
             }
         }
+    }
+
+    static int currentRunnableThreads() {
+        int nbRunning = 0;
+        for (Thread t : Thread.getAllStackTraces().keySet()) {
+            if (t.getState()==Thread.State.RUNNABLE) nbRunning++;
+        }
+        return nbRunning;
     }
 }
