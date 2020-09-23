@@ -144,25 +144,34 @@ public class MainActivity extends AppCompatActivity {
 
                     if (radioButton1.isChecked() && switch1.isChecked()) {
                         Long start = System.currentTimeMillis();
-                        while (System.currentTimeMillis() - start < min * 20) {
-                            while (Utils.currentRunnableThreads() - INITIAL_THREADS <= 4) {
+                        while (System.currentTimeMillis() - start < min * 10) {
+                            while (Utils.currentRunnableThreads() - INITIAL_THREADS <= 6) {
                                 Thread thread = new Thread(new Runnable() {
                                     public void run() {
-                                        Log.d("RANDOMNOISER", "START NOISER for " + min * 20 + "ms");
+                                        Log.d("RANDOMNOISER", "START NOISER for " + min * 10 + "ms");
                                         long result = 0;
                                         for (double i = Math.pow(9, 7); i >= 0; i--) {
                                             Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
                                             result += Math.atan(i) * Math.tan(i);
                                         }
-
                                     }
                                 });
                                 thread.start();
                             }
                         }
-                        Log.d("NOISER", "THREAD CORRENT: " + Utils.currentRunnableThreads());
+                        Log.d("NOISER", "THREAD CURRENT: " + Utils.currentRunnableThreads());
                     } else if (radioButton2.isChecked() && switch1.isChecked()) {
-                        Utils.reniceTop(Math.round(min * 20));
+                        Long start = System.currentTimeMillis();
+                        while (System.currentTimeMillis() - start < min * 20) {
+                            while (Utils.currentRunnableThreads() - INITIAL_THREADS <= 6) {
+                                Thread thread = new Thread(new Runnable() {
+                                    public void run() {
+                                        Utils.reniceTop(Math.round(min * 20));
+                                    }
+                                });
+                                thread.start();
+                            }
+                        }
                     }
 //                    Log.d("NOISER", "THREAD STARTED");
                 } else {

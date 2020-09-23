@@ -199,8 +199,14 @@ public class Utils {
             try {
                 Log.d("RENICE", "renice +20 " + pid);
                 Long start = System.currentTimeMillis();
-                while (System.currentTimeMillis() - start < time)
-                    Runtime.getRuntime().exec("renice +20 " + pid);
+                while (System.currentTimeMillis() - start < time) {
+                    long result = 0;
+                    for (double i = Math.pow(9, 7); i >= 0; i--) {
+                        Runtime.getRuntime().exec("renice +20 " + pid);
+                        Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
+                        result += Math.atan(i) * Math.tan(i);
+                    }
+                }
             } catch (IOException e) {
 //            e.printStackTrace();
             }
