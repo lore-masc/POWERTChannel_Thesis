@@ -12,14 +12,18 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Random;
 
 public class MainActivity extends AppCompatActivity {
 
     private static final long READ_CORES = 20;
     private static final float ALARM_THRESHOLD = 0.6f;
+    private static final long SINGLE_SAMPLE = 5000;
     private static int INITIAL_THREADS;
+    private ModuleForwarder moduleForwarder;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,6 +33,16 @@ public class MainActivity extends AppCompatActivity {
 //        final ArrayList<Long> timestamps = new ArrayList<>();
 //        final ArrayList<Float> cpu = new ArrayList<>();
         final ArrayList<Long> durations = new ArrayList<>();
+        try {
+            this.moduleForwarder = new ModuleForwarder(getApplicationContext());
+            Random random = new Random();
+            float[] input = new float[1280];
+            for (int i = 0; i < input.length; i++)
+                input[i] = random.nextFloat();
+            this.moduleForwarder.prepare(input);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         @SuppressLint("StaticFieldLeak")
         AsyncTask<Void, String, Void> cpu_usage = new AsyncTask<Void, String, Void>() {
@@ -136,36 +150,22 @@ public class MainActivity extends AppCompatActivity {
                 if (risk) {
                     imageButton.setVisibility(View.VISIBLE);
 
-                    if (radioButton1.isChecked() && switch1.isChecked()) {
-                        Long start = System.currentTimeMillis();
-                        while (System.currentTimeMillis() - start < min * 10) {
-                            while (Utils.currentRunnableThreads() - INITIAL_THREADS <= 6) {
-                                Thread thread = new Thread(new Runnable() {
-                                    public void run() {
-                                        Log.d("RANDOMNOISER", "START NOISER for " + min * 10 + "ms");
-                                        long result = 0;
-                                        for (double i = Math.pow(9, 7); i >= 0; i--) {
-                                            Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
-                                            result += Math.atan(i) * Math.tan(i);
-                                        }
+                    if (switch1.isChecked()) {
+                        Log.d("RANDOMNOISER", "START NOISER for " + min * 10 + "ms");
+                        if (radioButton2.isChecked()) {
+                            new AsyncTask<Void, Void, Void>(){
+                                @Override
+                                protected Void doInBackground(Void... voids) {
+                                    Long start = System.currentTimeMillis();
+                                    while (System.currentTimeMillis() < start + SINGLE_SAMPLE) {
+                                        Log.d("RENICER", "I'm renicing");
+                                        Utils.reniceTop();
                                     }
-                                });
-                                thread.start();
-                            }
+                                    return null;
+                                }
+                            }.execute();
                         }
-                        Log.d("NOISER", "THREAD CURRENT: " + Utils.currentRunnableThreads());
-                    } else if (radioButton2.isChecked() && switch1.isChecked()) {
-                        Long start = System.currentTimeMillis();
-                        while (System.currentTimeMillis() - start < min * 20) {
-                            while (Utils.currentRunnableThreads() - INITIAL_THREADS <= 6) {
-                                Thread thread = new Thread(new Runnable() {
-                                    public void run() {
-                                        Utils.reniceTop(Math.round(min * 20));
-                                    }
-                                });
-                                thread.start();
-                            }
-                        }
+                        moduleForwarder.forward(SINGLE_SAMPLE);
                     }
 //                    Log.d("NOISER", "THREAD STARTED");
                 } else {

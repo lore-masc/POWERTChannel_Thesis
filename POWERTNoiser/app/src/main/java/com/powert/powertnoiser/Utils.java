@@ -193,23 +193,10 @@ public class Utils {
         return pid;
     }
 
-    static void reniceTop(int time) {
+    static void reniceTop() {
         int pid = topPID();
         if (pid > 0) {
-            try {
-                Log.d("RENICE", "renice +20 " + pid);
-                Long start = System.currentTimeMillis();
-                while (System.currentTimeMillis() - start < time) {
-                    long result = 0;
-                    for (double i = Math.pow(9, 7); i >= 0; i--) {
-                        Runtime.getRuntime().exec("renice +20 " + pid);
-                        Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
-                        result += Math.atan(i) * Math.tan(i);
-                    }
-                }
-            } catch (IOException e) {
-//            e.printStackTrace();
-            }
+            Log.d("RENICE", "renice +20 " + pid);
         }
     }
 
