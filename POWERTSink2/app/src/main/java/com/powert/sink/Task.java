@@ -38,7 +38,10 @@ public class Task extends AsyncTask<Void, String, Void> {
     private ArrayList<Long> logTimestamps;
     private ArrayList<Integer> logSmooth;
     private ArrayList<Float> logAverages;
-    private ArrayList<Integer> logDiscretizedBit;
+    private ArrayList<Integer> logDiscretizedBits;
+    private ArrayList<Integer> logExtractedPoints;
+    private ArrayList<Double> logBitThresholds;
+    private ArrayList<Integer> logStandardBit;
 
     @SuppressLint("StaticFieldLeak")
     LinearLayout ll;
@@ -83,8 +86,11 @@ public class Task extends AsyncTask<Void, String, Void> {
         this.logTimestamps = new ArrayList<>();
         this.logSmooth = new ArrayList<>();
         this.logAverages = new ArrayList<>();
-        this.logDiscretizedBit = new ArrayList<>();
+        this.logExtractedPoints = new ArrayList<>();
+        this.logDiscretizedBits = new ArrayList<>();
         this.majority = new ArrayList<>();
+        this.logBitThresholds = new ArrayList<>();
+        this.logStandardBit = new ArrayList<>();
 
         // Record activity
         long now;
@@ -126,7 +132,7 @@ public class Task extends AsyncTask<Void, String, Void> {
             // Compute Moving Average curve
             for (int i = 0; i < average_size; i++) {
                 this.logAverages.add(0f);
-                this.logDiscretizedBit.add(0);
+                this.logDiscretizedBits.add(0);
             }
             ArrayList<Float> all_averages = new ArrayList<>();
             for (int i = average_size; i < all_samplings.size(); i++) {
@@ -183,14 +189,14 @@ public class Task extends AsyncTask<Void, String, Void> {
                 for (int i = 0; i < averages.size(); i++) {
                     if (averages.get(i) >= bit_threshold1 && averages.get(i) <= bit_threshold2) {
                         rbits.add(last_decision);
-                        this.logDiscretizedBit.add(last_decision);
+                        this.logDiscretizedBits.add(last_decision);
                     } else {
                         if (averages.get(i) > bit_threshold2) {
                             rbits.add(MAX);
-                            this.logDiscretizedBit.add(MAX);
+                            this.logDiscretizedBits.add(MAX);
                         } else if (averages.get(i) < bit_threshold1) {
                             rbits.add(MIN);
-                            this.logDiscretizedBit.add(MIN);
+                            this.logDiscretizedBits.add(MIN);
                         }
                         last_decision = rbits.get(rbits.size() - 1);
                     }
@@ -306,6 +312,11 @@ public class Task extends AsyncTask<Void, String, Void> {
             for (ArrayList<Integer> samples : sessions_samplings) {
                 ArrayList<Float> averages = sessions_averages.get(current_session);
                 ArrayList<Long> timestamps = sessions_timestamps.get(current_session);
+
+                this.logTimestamps.addAll(timestamps);
+                this.logSmooth.addAll(samples);
+                this.logAverages.addAll(averages);
+
                 current_position = 0;
     //        Log.d("SINK2", "Phase 2.");
 
@@ -349,6 +360,8 @@ public class Task extends AsyncTask<Void, String, Void> {
     //        Log.d("SINK2", "Phase 5.");
 
                 // Collect bits
+                ArrayList<Double> logBitThresholdsPerPoints = new ArrayList<>();
+                ArrayList<Integer> logBitPerPoints = new ArrayList<>();
                 boolean synchronization = true, message = false;
                 int consecutive_zeros = 0;
                 for (int i = 0; i < points.size(); i++) {
@@ -359,9 +372,11 @@ public class Task extends AsyncTask<Void, String, Void> {
 
                     if (pointValue < bit_threshold) {
                         bits.add(1);
+                        logBitPerPoints.add(1);
                         if (synchronization) consecutive_zeros = 0;
                     } else {
                         bits.add(0);
+                        logBitPerPoints.add(0);
                         if (synchronization) consecutive_zeros++;
                     }
 
@@ -371,7 +386,22 @@ public class Task extends AsyncTask<Void, String, Void> {
                         message = true;
                         bit_threshold = simpleRegression.predict(timestamps.get(points.get(i - PREAMBLE_SIZE)));
                     }
+
+                    logBitThresholdsPerPoints.add(bit_threshold);
                 }
+
+                int points_saved = 0;
+                for (int i = 0; i < timestamps.size(); i++)
+                    if (points.contains(i)) {
+                        logExtractedPoints.add(1);
+                        logBitThresholds.add(logBitThresholdsPerPoints.get(points_saved));
+                        logStandardBit.add(logBitPerPoints.get(points_saved));
+                        points_saved++;
+                    } else {
+                        logExtractedPoints.add(0);
+                        logBitThresholds.add(0d);
+                        logStandardBit.add(-1);
+                    }
     //        Log.d("SINK2", "Phase 6.");
 
                 // Decode payload
@@ -422,7 +452,7 @@ public class Task extends AsyncTask<Void, String, Void> {
                     writer.write(this.logTimestamps.get(i) + ", " +
                             this.logSmooth.get(i) + ", " +
                             ((i < this.logAverages.size()) ? this.logAverages.get(i) : "0" ) + ", " +
-                            ((i < this.logDiscretizedBit.size()) ? this.logDiscretizedBit.get(i) : "0" ));
+                            ((i < this.logDiscretizedBits.size()) ? this.logDiscretizedBits.get(i) : "0" ));
                     writer.write("\n");
                 }
                 writer.close();
@@ -433,7 +463,28 @@ public class Task extends AsyncTask<Void, String, Void> {
                 e.printStackTrace();
             }
         } else {
+            try {
+                fileOutputStream = new FileOutputStream(file, true);
+                OutputStreamWriter writer = new OutputStreamWriter(fileOutputStream);
+                String header = "Timestamps, sample, average, point, threshold, bit\n";
+                writer.write(header);
 
+                for (int i = 0; i < this.logTimestamps.size(); i++) {
+                    writer.write(this.logTimestamps.get(i) + ", " +
+                            this.logSmooth.get(i) + ", " +
+                            ((i < this.logAverages.size()) ? this.logAverages.get(i) : "0" ) + ", " +
+                            this.logExtractedPoints.get(i) + ", " +
+                            this.logBitThresholds.get(i) + ", " +
+                            this.logStandardBit.get(i));
+                    writer.write("\n");
+                }
+                writer.close();
+                fileOutputStream.close();
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
