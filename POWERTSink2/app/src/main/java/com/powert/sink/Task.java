@@ -176,6 +176,8 @@ public class Task extends AsyncTask<Void, String, Void> {
                 ArrayList<Long> timestamps = sessions_timestamps.get(this.current_session);
                 this.logTimestamps.addAll(timestamps);
                 this.logSmooth.addAll(sessions_samplings.get(this.current_session));
+                if (this.current_session == 0)
+                    for (int i = 0; i < average_size; i++) this.logAverages.add(0f);
                 this.logAverages.addAll(averages);
                 bits.clear();
                 manchester_bits.clear();
@@ -269,6 +271,7 @@ public class Task extends AsyncTask<Void, String, Void> {
         } else {
             // Compute moving average curve
             ArrayList<Float> all_averages = new ArrayList<>();
+            for (int i = 0; i < average_size; i++) all_averages.add(0f);
             for (int i = average_size; i < all_samplings.size(); i++) {
                 ArrayList<Integer> movingAverageWindow = new ArrayList<>();
                 float average;
@@ -293,11 +296,11 @@ public class Task extends AsyncTask<Void, String, Void> {
                 if (all_averages.get(i) >= 3.5 && !p0) {
                     p0 = true;
                     last_p0 = i;
-                } else if (p0 && all_averages.get(i) < 3.5 && all_timestamps.get(i+average_size) - all_timestamps.get(last_p0+average_size) >= BYTE*wait || i+1 == all_averages.size()) {
-                    Log.d("Sink2", "New session after interruption of " + (all_timestamps.get(last_p0+average_size)-all_timestamps.get(0)) + "-" + (all_timestamps.get(i+average_size)-all_timestamps.get(0)) + " = " + (all_timestamps.get(i+average_size) - all_timestamps.get(last_p0+average_size)));
-                    sessions_samplings.add(new ArrayList<>(all_samplings.subList(start_range, i+average_size+1)));
+                } else if (p0 && all_averages.get(i) < 3.5 && all_timestamps.get(i) - all_timestamps.get(last_p0) >= BYTE*wait || i+1 == all_averages.size()) {
+                    Log.d("Sink2", "New session after interruption of " + (all_timestamps.get(last_p0)-all_timestamps.get(0)) + "-" + (all_timestamps.get(i)-all_timestamps.get(0)) + " = " + (all_timestamps.get(i) - all_timestamps.get(last_p0)));
+                    sessions_samplings.add(new ArrayList<>(all_samplings.subList(start_range, i+1)));
                     sessions_averages.add(new ArrayList<>(all_averages.subList(start_range, i+1)));
-                    sessions_timestamps.add(new ArrayList<>(all_timestamps.subList(start_range, i+average_size+1)));
+                    sessions_timestamps.add(new ArrayList<>(all_timestamps.subList(start_range, i+1)));
                     majority.add(new ArrayList<Integer>());
                     p0 = false;
                     start_range = i+1;
@@ -312,7 +315,6 @@ public class Task extends AsyncTask<Void, String, Void> {
             for (ArrayList<Integer> samples : sessions_samplings) {
                 ArrayList<Float> averages = sessions_averages.get(current_session);
                 ArrayList<Long> timestamps = sessions_timestamps.get(current_session);
-
                 this.logTimestamps.addAll(timestamps);
                 this.logSmooth.addAll(samples);
                 this.logAverages.addAll(averages);
@@ -323,12 +325,11 @@ public class Task extends AsyncTask<Void, String, Void> {
                 // Find first low peak
                 int peakIdx = 0;
                 boolean peakInterval = false, found = false;
-                for (int i = average_size; i < samples.size() && !found; i++) {
-                    int average_idx = i - average_size;
-                    if (!peakInterval && averages.get(average_idx) < PEAK) {
+                for (int i = 0; i < samples.size() && !found; i++) {
+                    if (!peakInterval && averages.get(i) > 0 && averages.get(i) < PEAK) {
                         peakInterval = true;
                     } else if (peakInterval) {
-                        if (averages.get(average_idx) > averages.get(average_idx - 1)) {
+                        if (averages.get(i) > averages.get(i - 1)) {
                             peakInterval = false;
                             found = true;
                             peakIdx = i - 1;
@@ -365,7 +366,7 @@ public class Task extends AsyncTask<Void, String, Void> {
                 boolean synchronization = true, message = false;
                 int consecutive_zeros = 0;
                 for (int i = 0; i < points.size(); i++) {
-                    float pointValue = averages.get(points.get(i) - average_size);
+                    float pointValue = averages.get(points.get(i));
 
                     if (synchronization)
                         bit_threshold = simpleRegression.predict(timestamps.get(points.get(i)));

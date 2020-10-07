@@ -413,12 +413,19 @@ public class Task extends AsyncTask<Void, String, Void> {
 
     private int vote(int index) {
         int zeros = 0, ones = 0;
+        int election;
         for ( ArrayList<Integer> session : this.majority )
             if (session.size() > index) {
                 if (session.get(index) == 1) ones++;
                 else zeros++;
             }
-        return (ones > zeros) ? 1 : 0;
+        if (ones > zeros)
+            election = 1;
+        else if (zeros > ones)
+            election = 0;
+        else
+            election = this.majority.get(this.current_session).get(index);
+        return election;
     }
 
 }
