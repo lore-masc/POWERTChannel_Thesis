@@ -12,11 +12,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.Button;
-import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
-import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -80,7 +78,8 @@ public class PocFragment extends Fragment {
                                     encode_type = ENCODE_TYPE.CHARACTER;
                             }
 
-                            powertChannelManager.sendPackage(message, encode_type, sessions);
+                            powertChannelManager.setSessions(sessions);
+                            powertChannelManager.sendPackage(message, encode_type);
                             return null;
                         }
 
@@ -130,7 +129,8 @@ public class PocFragment extends Fragment {
                                     encode_type = ENCODE_TYPE.CHARACTER;
                             }
 
-                            powertChannelManager.sendPackage(message, encode_type, sessions);
+                            powertChannelManager.setSessions(sessions);
+                            powertChannelManager.sendPackage(message, encode_type);
                             return null;
                         }
 

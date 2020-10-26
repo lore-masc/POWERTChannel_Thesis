@@ -25,4 +25,7 @@
     <string name="mode2">Preamble received! Wait the message…</string>
     <string name="startwait">100</string>
     <string name="manchester">Manchester encoding </string>
+    <string name="vote">Vote for </string>
+    <string name="one">1</string>
+    <string name="sessions">sessions </string>
 </resources>

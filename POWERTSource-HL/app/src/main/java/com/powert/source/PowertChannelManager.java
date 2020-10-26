@@ -30,6 +30,7 @@ public class PowertChannelManager {
     ArrayList<Integer> logManchesterBits;
     ArrayList<Integer> logStandardBits;
     private boolean running;
+    private int sessions;
 
     PowertChannelManager(LinearLayout ll, Context context) throws IOException {
         this.ll = ll;
@@ -120,13 +121,16 @@ public class PowertChannelManager {
      * Send a long stream of 1 and 0 bits in order to synchronize sink.
      */
     private void sendLongStream () {
-        int[] longStream = new int[PowertChannelManager.LONG_STREAM_SIZE];
+        int[] longStream = new int[PowertChannelManager.LONG_STREAM_SIZE * this.sessions];
 
-        for (int i = 0; i < longStream.length && this.running; i++)
-            if (i % 2 == 0)
-                longStream[i] = 0;
-            else
-                longStream[i] = 1;
+        for (int i = 0; i < this.LONG_STREAM_SIZE && this.running; i++)
+            if (i % 2 == 0) {
+                for (int count = 0; count < this.sessions; count++)
+                    longStream[this.sessions * i + count] = 0;
+            } else {
+                for (int count = 0; count < this.sessions; count++)
+                    longStream[this.sessions * i + count] = 1;
+            }
         this.sendStreamBits(longStream);
     }
 
@@ -134,7 +138,7 @@ public class PowertChannelManager {
      * Send a prefixed weight of zero bits in order to prepare sink to receive message.
      */
     private void sendPreamble () {
-        int[] preambleStream = new int[PowertChannelManager.PREAMBLE_SIZE];
+        int[] preambleStream = new int[PowertChannelManager.PREAMBLE_SIZE * this.sessions];
         this.sendStreamBits(preambleStream);
     }
 
@@ -150,36 +154,36 @@ public class PowertChannelManager {
      * @param message String of message to send.
      * @param encode_type type of encoding to convert.
      */
-    void sendPackage(String message, PocFragment.ENCODE_TYPE encode_type, final int sessions) {
+    void sendPackage(String message, PocFragment.ENCODE_TYPE encode_type) {
         this.logTimestamps = new ArrayList<>();
         this.logManchesterBits = new ArrayList<>();
         this.logStandardBits = new ArrayList<>();
         this.running = true;
-        final int[] bits = (encode_type == PocFragment.ENCODE_TYPE.CHARACTER) ? stringToBitArray(message) : bitsToBitArray(message);
+        int[] bits = (encode_type == PocFragment.ENCODE_TYPE.CHARACTER) ? stringToBitArray(message) : bitsToBitArray(message);
 
+        if(this.sessions > 1) {
+            final int[] session_bits = bits;
+            bits = new int[session_bits.length * this.sessions];
+            for (int i = 0; i < session_bits.length; i++) {
+                bits[this.sessions*i]   = session_bits[i];
+                bits[this.sessions*i+1] = session_bits[i];
+                bits[this.sessions*i+2] = session_bits[i];
+            }
+        }
+
+        final int[] finalBits = bits;
         @SuppressLint("StaticFieldLeak") final AsyncTask<Void, String, Void> asyncTask = new AsyncTask<Void, String, Void>() {
             @Override
             protected Void doInBackground(Void... voids) {
-                int iterations = Math.max(1, sessions);
-                int i = 0;
-                do {
-                    publishProgress("Session " + (i+1) + " - Long stream sending...");
-                    sendLongStream();
-                    publishProgress("Session " + (i+1) + " - Preamble sending...");
-                    sendPreamble();
-                    publishProgress("Session " + (i+1) + " - Message sending...");
-                    sendStreamBits(bits);
-                    i++;
-                    if (i < iterations && iterations > 1) {
-                        publishProgress("Session " + (i) + " - Terminating...");
-                        long wait_time = (usingManchesterEncoding()) ? 16*PowertChannelManager.TIME : 8*PowertChannelManager.TIME;
-                        try {
-                            Thread.sleep(wait_time);   // window of null byte
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                } while (i < iterations && running);
+                publishProgress("Starter bit sending...");
+                logStandardBits.add(1); //logStandardBits.add(1);
+                sendBit1();
+                publishProgress("Long stream sending...");
+                sendLongStream();
+                publishProgress("Preamble sending...");
+                sendPreamble();
+                publishProgress("Message sending...");
+                sendStreamBits(finalBits);
                 publishProgress("Done.");
                 return null;
             }
@@ -209,6 +213,10 @@ public class PowertChannelManager {
             }
         };
         asyncTask.execute();
+    }
+
+    void setSessions(int sessions) {
+        this.sessions = sessions;
     }
 
     /**
@@ -277,8 +285,22 @@ public class PowertChannelManager {
         String header = "Timestamps, Manchester bits, Standard bits\n";
         writer.write(header);
 
+        // log the starter bit
+        writer.write(this.logTimestamps.get(0) + ", " +
+                this.logManchesterBits.get(0) + ", " +
+                this.logStandardBits.get(0));
+        writer.write("\n");
+
+        // remove the starter bit
+        this.logTimestamps.remove(0);
+        this.logStandardBits.remove(0);
+        this.logManchesterBits.remove(0);
+
+        // log the rest of bits
         for (int i = 0; i < this.logTimestamps.size(); i++) {
-            writer.write(this.logTimestamps.get(i) + ", " + this.logManchesterBits.get(i) + ", " + this.logStandardBits.get((this.manchester) ? i/2 : i));
+            writer.write(this.logTimestamps.get(i) + ", " +
+                    this.logManchesterBits.get(i) + ", " +
+                    this.logStandardBits.get((this.manchester) ? i/2 : i));
             writer.write("\n");
         }
         writer.close();

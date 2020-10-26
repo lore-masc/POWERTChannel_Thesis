@@ -5,6 +5,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.Switch;
 
@@ -31,11 +32,13 @@ public class PocFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 final Switch switch1 = ll.findViewById(R.id.switch1);
+                final EditText editTextNumber1 = ll.findViewById(R.id.editTextNumber1);
                 String btn_text = button2.getText().toString();
+                int sessions = Integer.parseInt(editTextNumber1.getText().toString());
 
                 if (btn_text.equals(getResources().getString(R.string.listen))) {
                     button2.setText(getResources().getString(R.string.stop));
-                    task[0] = new Task(ll, getContext());
+                    task[0] = new Task(ll, getContext(), sessions);
                     task[0].useManchesterEncoding(switch1.isChecked());
                     task[0].setRecording(true);
                     task[0].execute();
